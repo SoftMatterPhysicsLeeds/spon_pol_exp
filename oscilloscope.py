@@ -24,6 +24,7 @@ class Tektronix():
         else:
             self.scope.write(f"SEL:{channel} OFF")
 
+<<<<<<< HEAD
     def set_timebase(self, timebase=0):
         self.scope.write(f":HOR:MAI:SCA {timebase}")
 
@@ -33,3 +34,18 @@ class Tektronix():
     def reset_to_default(self):
         self.scope.write("*RST")
         self.scope.write(":HEADER OFF;*ESE 60;*SRE 32;*CLS;")
+=======
+
+    def set_timebase(self, timebase = 0):
+        self.scope.write(f":HOR:MAI:SCA {timebase}")
+
+    
+    def set_horizontal_offset(self, offset = 0):
+        self.scope.write(f":HOR:MAI:POS {offset}")
+
+
+    def reset_to_default(self):
+        self.scope.write("*RST")
+        self.scope.write(":HEADER OFF;*ESE 60;*SRE 32;*CLS;")
+  
+>>>>>>> defc200ce939be2859c375a5220c548b4e981ae1
