@@ -1,5 +1,6 @@
 import pyvisa
 
+
 class LinkamHotstage:
     def __init__(self, address: str) -> None:
 
@@ -70,4 +71,3 @@ class LinkamHotstage:
 
         temperature = int(raw_string[6:10], 16) / 10.0
         return temperature, status
-
