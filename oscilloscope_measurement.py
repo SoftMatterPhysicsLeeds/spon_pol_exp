@@ -10,7 +10,7 @@ scope.initialise_scope(timebase=0.0005)
 
 ## initialise each channel - in this case, channel 1
 
-scope.initialise_channel(channel="CH1")
+scope.initialise_channel(channel="CH1", v_range=0.2)
 
 ## measurement initialisation
 

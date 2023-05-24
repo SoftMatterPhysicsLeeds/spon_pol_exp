@@ -54,20 +54,20 @@ class Tektronix:
         self.set_channel_coupling(channel, coupling)
         self.set_channel_offset(channel, v_offset)
         self.set_channel_attenuation(channel, probe_atten)
-        self.set_channel_range(v_range)
+        self.set_channel_range(channel, v_range)
         self.toggle_channel()
 
     def set_channel_coupling(self, channel="CH1", coupling="AC"):
         self.scope.write(f"{channel}:COUP {coupling};")
 
-    def set_channel_offset(self, channel="CH1", vertical_offset="0.0"):
+    def set_channel_offset(self, channel="CH1", vertical_offset=0.0):
         self.scope.write(f"{channel}:POS {vertical_offset}")
 
-    def set_channel_attenuation(self, channel="CH1", prob_atten="10"):
+    def set_channel_attenuation(self, channel="CH1", prob_atten=10):
         self.scope.write(f"{channel}:PRO {prob_atten}")
 
-    def set_channel_range(self, channel="CH1", vertical_range="0"):
-        self.scope.write(f"{channel}:POS {vertical_range}")
+    def set_channel_range(self, channel="CH1", vertical_range=0):
+        self.scope.write(f"{channel}:SCA {vertical_range}")
 
     def toggle_channel(self, channel="CH1", on=True):
         if on:
