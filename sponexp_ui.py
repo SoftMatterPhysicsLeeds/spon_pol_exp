@@ -145,11 +145,15 @@ def createMultiValueWindow(
 def init_ui():
     layout = QGridLayout()
 
+    widgets = {}
+
     wfg_frame = init_wfg_layout()
     temp_frame=  init_temperature_settings()
+    channel_frame = create_channel_frame(widgets, 1)
+
     layout.addWidget(wfg_frame, 0, 0)
     layout.addWidget(temp_frame, 1, 0)
-
+    layout.addWidget(channel_frame, 2, 0)
     return layout
 
 
@@ -180,6 +184,33 @@ def init_wfg_layout():
     frequency_edit = QLineEdit("0")
     layout.addWidget(frequency_edit, 0, 8)
 
+    return frame
+
+def create_channel_frame(widgets, channel=1):
+    frame = QGroupBox()
+    frame.setTitle(f"Channel {channel}")
+    layout = QGridLayout(frame)
+
+    layout.addWidget(QLabel("Vertical Coupling"), 0, 0)
+
+    v_coupling_combo = QComboBox()
+    v_coupling_combo.addItem("DC")
+    v_coupling_combo.addItem("AC")
+    v_coupling_combo.addItem("GND")
+    layout.addWidget(v_coupling_combo, 1, 0)
+
+    layout.addWidget(QLabel("Probe Attenuation"), 2 ,0)
+    prob_atten_edit = QLineEdit("1", 3, 0)
+    layout.addWidget(prob_atten_edit, 4, 0)
+
+    layout.addWidget(QLabel("Vertical Range"), 5 ,0)
+    vertical_range_edit = QLineEdit("0", 6, 0)
+    layout.addWidget(vertical_range_edit, 7, 0)
+
+    layout.addWidget(QLabel("Vertical Offset"), 8 ,0)
+    vertical_offset_edit = QLineEdit("0", 9, 0)
+    layout.addWidget(vertical_offset_edit, 10, 0)
+  
     return frame
 
 
