@@ -46,7 +46,7 @@ class Tektronix:
         self.set_trigger_coupling(trigger_coupling)
         self.set_trigger_holdoff(trigger_holdoff)
         self.set_trigger_level(trigger_level)
-        self.set_trigger_mode()
+        self.set_trigger_mode(trigger_mode)
 
     def initialise_channel(
         self, channel="CH1", coupling="AC", v_offset=0.0, probe_atten=10, v_range=0

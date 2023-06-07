@@ -149,11 +149,13 @@ def init_ui():
 
     wfg_frame = init_wfg_layout()
     temp_frame=  init_temperature_settings()
-    channel_frame = create_channel_frame(widgets, 1)
+    osci_frame = create_oscilloscope_frame(widgets)
+    
 
     layout.addWidget(wfg_frame, 0, 0)
     layout.addWidget(temp_frame, 1, 0)
-    layout.addWidget(channel_frame, 2, 0)
+    layout.addWidget(osci_frame,2, 0)
+    
     return layout
 
 
@@ -186,30 +188,87 @@ def init_wfg_layout():
 
     return frame
 
+
+def create_oscilloscope_frame(widgets):
+    frame = QGroupBox()
+    frame.setTitle("Oscilloscope")
+    layout = QGridLayout(frame)
+
+    trigger_coupling_combo = QComboBox()
+    trigger_coupling_combo.addItem("AC")
+    trigger_coupling_combo.addItem("DC")
+    layout.addWidget(trigger_coupling_combo, 0, 0)
+
+    trigger_mode_combo = QComboBox()
+    trigger_mode_combo.addItem("Auto")
+    trigger_mode_combo.addItem("Normal")
+    layout.addWidget(trigger_mode_combo, 0, 1)
+    
+    trigger_slope_combo = QComboBox()
+    trigger_slope_combo.addItem("Rising")
+    trigger_slope_combo.addItem("Falling")
+    layout.addWidget(trigger_slope_combo, 0, 2)
+    
+    trigger_level_edit = QLineEdit("0")
+    layout.addWidget(trigger_level_edit, 0, 3)
+    
+    trigger_source_combo = QComboBox()
+    trigger_source_combo.addItem("Channel 1")
+    trigger_source_combo.addItem("Channel 2")
+    trigger_source_combo.addItem("Channel 3")
+    trigger_source_combo.addItem("Channel 4")
+    layout.addWidget(trigger_source_combo, 0, 4)
+
+
+    channel_frame_1 = create_channel_frame(widgets, 1)
+    channel_frame_2 = create_channel_frame(widgets, 2)
+    channel_frame_3 = create_channel_frame(widgets, 3)
+    channel_frame_4 = create_channel_frame(widgets, 4)
+
+    layout.addWidget(channel_frame_1, 1, 0)
+    layout.addWidget(channel_frame_2, 1, 1)
+    layout.addWidget(channel_frame_3, 1, 2)
+    layout.addWidget(channel_frame_4, 1, 3)
+
+    return frame
+
+
+
 def create_channel_frame(widgets, channel=1):
     frame = QGroupBox()
     frame.setTitle(f"Channel {channel}")
     layout = QGridLayout(frame)
 
-    layout.addWidget(QLabel("Vertical Coupling"), 0, 0)
+    channel_label = QLineEdit(f"Channel {channel} values")
+    layout.addWidget(channel_label, 0, 0)
+
+    layout.addWidget(QLabel("Vertical Coupling"), 1, 0)
 
     v_coupling_combo = QComboBox()
     v_coupling_combo.addItem("DC")
     v_coupling_combo.addItem("AC")
     v_coupling_combo.addItem("GND")
-    layout.addWidget(v_coupling_combo, 1, 0)
+    layout.addWidget(v_coupling_combo, 2, 0)
 
-    layout.addWidget(QLabel("Probe Attenuation"), 2 ,0)
-    prob_atten_edit = QLineEdit("1", 3, 0)
+    layout.addWidget(QLabel("Probe Attenuation"), 3 ,0)
+    prob_atten_edit = QLineEdit("1")
     layout.addWidget(prob_atten_edit, 4, 0)
 
     layout.addWidget(QLabel("Vertical Range"), 5 ,0)
-    vertical_range_edit = QLineEdit("0", 6, 0)
-    layout.addWidget(vertical_range_edit, 7, 0)
+    vertical_range_edit = QLineEdit("0")
+    layout.addWidget(vertical_range_edit, 6, 0)
 
-    layout.addWidget(QLabel("Vertical Offset"), 8 ,0)
-    vertical_offset_edit = QLineEdit("0", 9, 0)
-    layout.addWidget(vertical_offset_edit, 10, 0)
+    layout.addWidget(QLabel("Vertical Offset"), 7 ,0)
+    vertical_offset_edit = QLineEdit("0")
+    layout.addWidget(vertical_offset_edit,8, 0)
+
+    widgets.update({
+        f"channel_label_{channel}"       : channel_label,
+        f"v_coupling_combo_{channel}"    : v_coupling_combo,
+        f"prob_atten_edit_{channel}"     : v_coupling_combo,
+        f"vertical_range_edit_{channel}" : vertical_range_edit,
+        f"vertical_offset_edit_{channel}": vertical_offset_edit,
+    })
   
     return frame
 
