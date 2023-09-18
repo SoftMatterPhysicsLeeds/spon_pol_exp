@@ -1,4 +1,11 @@
 from dataclasses import dataclass
+from smponpol.instruments import LinkamHotstage
+
+
+@dataclass
+class SponState:
+    linkam_connection_status: str = "Disconnected"
+    linkam_action: str = "Idle"
 
 
 @dataclass
@@ -21,3 +28,8 @@ class variable_list:
     add_range_handle: str | int
     del_button_handle: str | int
     range_selector: range_selector_window
+
+
+@dataclass
+class SponInstruments:
+    linkam: LinkamHotstage | None = None

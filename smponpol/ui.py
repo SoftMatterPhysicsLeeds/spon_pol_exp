@@ -1,23 +1,64 @@
+import pyvisa
+import threading
+from smponpol.dataclasses import variable_list, range_selector_window
 import numpy as np
 import dearpygui.dearpygui as dpg
+
+from smponpol.instruments import LinkamHotstage
+from smponpol.dataclasses import SponState, SponInstruments
 VIEWPORT_WIDTH = 1280
 DRAW_HEIGHT = 850
 VIEWPORT_HEIGHT = DRAW_HEIGHT - 40
-
-from smponpol.dataclasses import variable_list, range_selector_window
 
 
 class SMPonpolUI:
     def __init__(self):
         self.output_file_window = OutputFileWindow()
         self.temperature_window = TemperatureWindow()
+        self.instrument_control_window = InstrumentControlWindow()
+
+    def extra_config(self, state: SponState, instruments: SponInstruments):
+        dpg.configure_item(
+            self.linkam_initialise,
+            callback=connect_to_instrument_callback,
+            user_data={
+                "instrument": "linkam",
+                "frontend": self,
+                "instruments": instruments,
+                "state": state,
+            },
+        )
+
+
+class InstrumentControlWindow:
+    def __init__(self):
+        self.linkam_status = "Idle"
+        with dpg.window(label="Status Window",
+                        pos=[0, 0],
+                        width=VIEWPORT_WIDTH/2,
+                        height=VIEWPORT_HEIGHT/4,
+                        no_collapse=True,
+                        no_close=True,):
+
+            with dpg.group(horizontal=True):
+                dpg.add_text("Linkam: ")
+                self.linkam_status = dpg.add_text(
+                    f"{self.linkam_status}", tag="linkam_status_display"
+                )
+                self.linkam_com_selector = dpg.add_combo(width=200)
+                self.linkam_initialise = dpg.add_button(
+                    label="Initialise",
+                )
+
 
 class OutputFileWindow:
     def __init__(self):
         with dpg.window(label="Output File Settings",
-                        pos=[0, 0],
+                        pos=[VIEWPORT_WIDTH/2, 0],
                         width=VIEWPORT_WIDTH/2,
-                        height=VIEWPORT_HEIGHT/4):
+                        height=VIEWPORT_HEIGHT/4,
+                        no_collapse=True,
+                        no_close=True,):
             with dpg.group(horizontal=True):
                 dpg.add_text(f"{'Folder':>15}: ")
                 self.output_folder = dpg.add_input_text(
@@ -52,7 +93,9 @@ class TemperatureWindow:
             label="Temperature List",
             width=VIEWPORT_WIDTH / 2,
             height=VIEWPORT_HEIGHT / 4,
-            pos=[VIEWPORT_WIDTH/2, 0],
+            pos=[0, VIEWPORT_HEIGHT/4],
+            no_collapse=True,
+            no_close=True,
         ):
             with dpg.group(horizontal=True):
                 self.temperature_list = variable_list(
@@ -75,6 +118,37 @@ class TemperatureWindow:
                         self.stab_time = dpg.add_input_double(
                             default_value=1, width=150
                         )
+
+
+def init_linkam(
+    frontend: SMPonpolUI,
+    instruments: SponInstruments,
+    state: SponState
+) -> None:
+    linkam = LinkamHotstage(dpg.get_value(frontend.linkam_com_selector))
+    try:
+        linkam.current_temperature()
+        dpg.set_value(frontend.linkam_status, "Connected")
+        dpg.hide_item(frontend.linkam_initialise)
+        instruments.linkam = linkam
+
+        state.linkam_connection_status = "Connected"
+        with open("address.dat", "w") as f:
+            f.write(dpg.get_value(frontend.linkam_com_selector))
+
+    except pyvisa.errors.VisaIOError:
+        dpg.set_value(frontend.linkam_status, "Couldn't connect")
+
+
+def connect_to_instrument_callback(sender, app_data, user_data):
+    if user_data["instrument"] == "linkam":
+        thread = threading.Thread(
+            target=init_linkam,
+            args=(user_data["frontend"],
+                  user_data["instruments"], user_data["state"]),
+        )
+    thread.daemon = True
+    thread.start()
 
 
 def saveas_folder_callback(sender, app_data, output_file_path):
@@ -132,17 +206,19 @@ def make_variable_list_frame(default_val, min_val, max_val, logspace=False):
             )
 
     dpg.hide_item(window_tag)
-    
+
     with dpg.group(horizontal=True):
         listbox_handle = dpg.add_listbox(
             ["1:\t" + str(default_val)], width=150, num_items=10
         )
         with dpg.group():
-            add_text = dpg.add_input_float(default_value=default_val, width=150)
+            add_text = dpg.add_input_float(
+                default_value=default_val, width=150)
             add_button = dpg.add_button(
                 label="Add",
                 callback=add_value_to_list_callback,
-                user_data={"listbox_handle": listbox_handle, "add_text": add_text},
+                user_data={"listbox_handle": listbox_handle,
+                           "add_text": add_text},
             )
             add_range_button = dpg.add_button(
                 label="Add Range", callback=lambda: dpg.show_item(window_tag)
@@ -150,7 +226,8 @@ def make_variable_list_frame(default_val, min_val, max_val, logspace=False):
             delete_button = dpg.add_button(
                 label="Delete",
                 callback=del_value_from_list_callback,
-                user_data={"listbox_handle": listbox_handle, "add_text": add_text},
+                user_data={"listbox_handle": listbox_handle,
+                           "add_text": add_text},
             )
 
     with dpg.group(parent=range_selector_group, horizontal=True):
@@ -180,6 +257,7 @@ def make_variable_list_frame(default_val, min_val, max_val, logspace=False):
         range_selector,
     )
 
+
 def change_spacing_callback(sender, app_data, user_data):
     if dpg.get_value(sender) == "Step Size":
         dpg.set_value(user_data["spacing_label"], "Step Size:")
@@ -194,8 +272,10 @@ def change_spacing_callback(sender, app_data, user_data):
         dpg.hide_item(user_data["spacing_input"])
         dpg.show_item(user_data["number_of_points_input"])
 
+
 def add_value_to_list_callback(sender, app_data, user_data):
-    current_list = dpg.get_item_configuration(user_data["listbox_handle"])["items"]
+    current_list = dpg.get_item_configuration(
+        user_data["listbox_handle"])["items"]
     if len(current_list) == 0:
         new_item_number = 1
     else:
@@ -204,6 +284,7 @@ def add_value_to_list_callback(sender, app_data, user_data):
         f"{new_item_number}:\t" + str(dpg.get_value(user_data["add_text"]))
     )
     dpg.configure_item(user_data["listbox_handle"], items=current_list)
+
 
 def replace_list_callback(sender, app_data, user_data):
     if (
@@ -214,7 +295,8 @@ def replace_list_callback(sender, app_data, user_data):
             np.linspace(
                 dpg.get_value(user_data["range_selector"].min_value_input),
                 dpg.get_value(user_data["range_selector"].max_value_input),
-                dpg.get_value(user_data["range_selector"].number_of_points_input),
+                dpg.get_value(
+                    user_data["range_selector"].number_of_points_input),
             )
         )
 
@@ -224,9 +306,12 @@ def replace_list_callback(sender, app_data, user_data):
     ):
         values_to_add = list(
             np.logspace(
-                np.log10(dpg.get_value(user_data["range_selector"].min_value_input)),
-                np.log10(dpg.get_value(user_data["range_selector"].max_value_input)),
-                dpg.get_value(user_data["range_selector"].number_of_points_input),
+                np.log10(dpg.get_value(
+                    user_data["range_selector"].min_value_input)),
+                np.log10(dpg.get_value(
+                    user_data["range_selector"].max_value_input)),
+                dpg.get_value(
+                    user_data["range_selector"].number_of_points_input),
             )
         )
     else:
@@ -235,8 +320,7 @@ def replace_list_callback(sender, app_data, user_data):
                 dpg.get_value(user_data["range_selector"].min_value_input),
                 dpg.get_value(
                     user_data["range_selector"].max_value_input)
-                    + dpg.get_value(user_data["range_selector"].spacing_input)
-                ,
+                + dpg.get_value(user_data["range_selector"].spacing_input),
                 dpg.get_value(user_data["range_selector"].spacing_input),
             )
         )
@@ -245,8 +329,10 @@ def replace_list_callback(sender, app_data, user_data):
 
     dpg.configure_item(user_data["listbox_handle"], items=new_list_numbered)
 
+
 def append_range_to_list_callback(sender, app_data, user_data):
-    current_list = dpg.get_item_configuration(user_data["listbox_handle"])["items"]
+    current_list = dpg.get_item_configuration(
+        user_data["listbox_handle"])["items"]
 
     if (
         dpg.get_value(user_data["range_selector"].spacing_combo)
@@ -256,7 +342,8 @@ def append_range_to_list_callback(sender, app_data, user_data):
             np.linspace(
                 dpg.get_value(user_data["range_selector"].min_value_input),
                 dpg.get_value(user_data["range_selector"].max_value_input),
-                dpg.get_value(user_data["range_selector"].number_of_points_input),
+                dpg.get_value(
+                    user_data["range_selector"].number_of_points_input),
             )
         )
 
@@ -266,9 +353,12 @@ def append_range_to_list_callback(sender, app_data, user_data):
     ):
         values_to_add = list(
             np.logspace(
-                np.log10(dpg.get_value(user_data["range_selector"].min_value_input)),
-                np.log10(dpg.get_value(user_data["range_selector"].max_value_input)),
-                dpg.get_value(user_data["range_selector"].number_of_points_input),
+                np.log10(dpg.get_value(
+                    user_data["range_selector"].min_value_input)),
+                np.log10(dpg.get_value(
+                    user_data["range_selector"].max_value_input)),
+                dpg.get_value(
+                    user_data["range_selector"].number_of_points_input),
             )
         )
 
@@ -278,8 +368,7 @@ def append_range_to_list_callback(sender, app_data, user_data):
                 dpg.get_value(user_data["range_selector"].min_value_input),
                 dpg.get_value(
                     user_data["range_selector"].max_value_input)
-                    + dpg.get_value(user_data["range_selector"].spacing_input)
-                ,
+                + dpg.get_value(user_data["range_selector"].spacing_input),
                 dpg.get_value(user_data["range_selector"].spacing_input),
             )
         )
@@ -290,12 +379,13 @@ def append_range_to_list_callback(sender, app_data, user_data):
 
     dpg.configure_item(user_data["listbox_handle"], items=new_list)
 
+
 def del_value_from_list_callback(sender, app_data, user_data):
-    current_list = dpg.get_item_configuration(user_data["listbox_handle"])["items"]
+    current_list = dpg.get_item_configuration(
+        user_data["listbox_handle"])["items"]
     if len(current_list) == 0:
         return
     selected_item = dpg.get_value(user_data["listbox_handle"])
     current_list.remove(selected_item)
     new_list = [f"{i+1}:{x.split(':')[1]}" for i, x in enumerate(current_list)]
     dpg.configure_item(user_data["listbox_handle"], items=new_list)
-
