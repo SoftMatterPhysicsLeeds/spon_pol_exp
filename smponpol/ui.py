@@ -4,7 +4,7 @@ from smponpol.dataclasses import variable_list, range_selector_window
 import numpy as np
 import dearpygui.dearpygui as dpg
 
-from smponpol.instruments import LinkamHotstage
+from smponpol.instruments import LinkamHotstage, Agilent33220A
 from smponpol.dataclasses import SponState, SponInstruments
 VIEWPORT_WIDTH = 1280
 DRAW_HEIGHT = 850
@@ -15,14 +15,25 @@ class SMPonpolUI:
     def __init__(self):
         self.output_file_window = OutputFileWindow()
         self.temperature_window = TemperatureWindow()
+        self.frequency_window = FrequencyWindow()
         self.instrument_control_window = InstrumentControlWindow()
 
     def extra_config(self, state: SponState, instruments: SponInstruments):
         dpg.configure_item(
-            self.linkam_initialise,
+            self.instrument_control_window.linkam_initialise,
             callback=connect_to_instrument_callback,
             user_data={
                 "instrument": "linkam",
+                "frontend": self,
+                "instruments": instruments,
+                "state": state,
+            },
+        )
+        dpg.configure_item(
+            self.instrument_control_window.agilent_initialise,
+            callback=connect_to_instrument_callback,
+            user_data={
+                "instrument": "agilent",
                 "frontend": self,
                 "instruments": instruments,
                 "state": state,
@@ -32,7 +43,8 @@ class SMPonpolUI:
 
 class InstrumentControlWindow:
     def __init__(self):
-        self.linkam_status = "Idle"
+        self.linkam_status = "Disconnected"
+        self.agilent_status = "Disconnected"
         with dpg.window(label="Status Window",
                         pos=[0, 0],
                         width=VIEWPORT_WIDTH/2,
@@ -47,6 +59,16 @@ class InstrumentControlWindow:
                 )
                 self.linkam_com_selector = dpg.add_combo(width=200)
                 self.linkam_initialise = dpg.add_button(
+                    label="Initialise",
+                )
+
+            with dpg.group(horizontal=True):
+                dpg.add_text("Waveform generator: ")
+                self.agilent_status = dpg.add_text(
+                    f"{self.agilent_status}", tag="agilent_status_display"
+                )
+                self.agilent_com_selector = dpg.add_combo(width=200)
+                self.agilent_initialise = dpg.add_button(
                     label="Initialise",
                 )
 
@@ -84,6 +106,22 @@ class OutputFileWindow:
             width=700,
             height=400
         )
+
+
+class FrequencyWindow:
+    def __init__(self):
+        with dpg.window(
+            label="Frequency List",
+            width=VIEWPORT_WIDTH / 2,
+            height=VIEWPORT_HEIGHT / 4,
+            pos=[VIEWPORT_WIDTH/2, VIEWPORT_HEIGHT/4],
+            no_collapse=True,
+            no_close=True,
+        ):
+            with dpg.group(horizontal=True):
+                self.frequency_lsit = variable_list(
+                    *make_variable_list_frame(1000.0, 1e-6, 20e6)
+                )
 
 
 class TemperatureWindow:
@@ -138,6 +176,16 @@ def init_linkam(
 
     except pyvisa.errors.VisaIOError:
         dpg.set_value(frontend.linkam_status, "Couldn't connect")
+
+
+def init_agilent(
+    frontend: SMPonpolUI, instruments: SponInstruments, state: SponState
+) -> None:
+    agilent = Agilent33220A(dpg.get_value(frontend.agilent_com_selector))
+    dpg.set_value(frontend.agilent_status, "Connected")
+    dpg.hide_item(frontend.agilent_initialise)
+    instruments.agilent = agilent
+    state.agilent_connection_status = "Connected"
 
 
 def connect_to_instrument_callback(sender, app_data, user_data):

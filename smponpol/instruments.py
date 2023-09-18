@@ -1,5 +1,6 @@
-import threading 
+import threading
 import pyvisa
+
 
 class LinkamHotstage:
     def __init__(self, address: str) -> None:
@@ -81,3 +82,30 @@ class LinkamHotstage:
     def close(self):
         self.link.close()
 
+
+class Agilent33220A:
+    def __init__(self, address):
+        rm = pyvisa.ResourceManager()
+        self.wfg = rm.open_resource(address)
+
+    def set_waveform(self, waveform="SIN"):
+        self.wfg.write(f"FUNC {waveform}")
+
+    def set_frequency(self, frequency=1000.0):
+        self.wfg.write(f"FREQ {frequency}")
+
+    def set_voltage(self, voltage=1.0):
+        self.wfg.write(f"VOLT {voltage}")
+
+    def set_voltage_unit(self, voltage_unit="VPP"):
+        # options VPP | VRMS | DBM
+        self.wfg.write(f"VOLT:UNIT {voltage_unit}")
+
+    def set_dc_offset(self, offset=0):
+        self.wfg.write(f"VOLT:OFFS {offset}")
+
+    def set_output(self, output="OFF"):
+        self.wfg.write(f":OUTP {output}")
+
+    def close_wfg(self):
+        self.wfg.close()

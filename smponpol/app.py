@@ -1,6 +1,10 @@
 import dearpygui.dearpygui as dpg
 from smponpol.ui import VIEWPORT_WIDTH, DRAW_HEIGHT, SMPonpolUI
+from smponpol.dataclasses import SponState, SponInstruments
+from smponpol.utils import find_instruments
 from pathlib import Path
+import threading
+
 
 def main():
     font_path = Path("./assets/IosevkaNerdFont-Regular.ttf")
@@ -20,6 +24,13 @@ def main():
     dpg.show_viewport()
 
     ui = SMPonpolUI()
+    instruments = SponInstruments()
+    state = SponState()
+    ui.extra_config(state, instruments)
+
+    thread = threading.Thread(target=find_instruments, args=(ui,))
+    thread.daemon = True
+    thread.start()
 
     while dpg.is_dearpygui_running():
         dpg.render_dearpygui_frame()

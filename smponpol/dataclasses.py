@@ -6,6 +6,7 @@ from smponpol.instruments import LinkamHotstage
 class SponState:
     linkam_connection_status: str = "Disconnected"
     linkam_action: str = "Idle"
+    agilent_connection_status: str = "Disconnected"
 
 
 @dataclass
