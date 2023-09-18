@@ -163,7 +163,7 @@ def init_linkam(
     instruments: SponInstruments,
     state: SponState
 ) -> None:
-    linkam = LinkamHotstage(dpg.get_value(frontend.linkam_com_selector))
+    linkam = LinkamHotstage(dpg.get_value(frontend.instrument_control_window.linkam_com_selector))
     try:
         linkam.current_temperature()
         dpg.set_value(frontend.linkam_status, "Connected")
@@ -172,7 +172,7 @@ def init_linkam(
 
         state.linkam_connection_status = "Connected"
         with open("address.dat", "w") as f:
-            f.write(dpg.get_value(frontend.linkam_com_selector))
+            f.write(dpg.get_value(frontend.instrument_control_window.linkam_com_selector))
 
     except pyvisa.errors.VisaIOError:
         dpg.set_value(frontend.linkam_status, "Couldn't connect")
@@ -181,7 +181,7 @@ def init_linkam(
 def init_agilent(
     frontend: SMPonpolUI, instruments: SponInstruments, state: SponState
 ) -> None:
-    agilent = Agilent33220A(dpg.get_value(frontend.agilent_com_selector))
+    agilent = Agilent33220A(dpg.get_value(frontend.instrument_control_window.agilent_com_selector))
     dpg.set_value(frontend.agilent_status, "Connected")
     dpg.hide_item(frontend.agilent_initialise)
     instruments.agilent = agilent
