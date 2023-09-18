@@ -109,3 +109,84 @@ class Agilent33220A:
 
     def close_wfg(self):
         self.wfg.close()
+
+
+class Rigol4204:
+    def __init__(self, address):
+        rm = pyvisa.ResourceManager()
+        self.scope = rm.open_resource(address)
+        self.scope.timeout = 100000.0
+        self.scope.write(":TIM:HREF:MODE CENT")
+        self.scope.write(":TRIG:NREJ ON")
+
+    # Memory Depth options: 1k, 10k, 100k, 1M, 10M, 25M, 50M, 100M, 125M
+    def set_memory_depth(self, depth=10000):
+        self.scope.write(f"ACQ:MDEP {depth}")
+
+    # acqusition types: NORM, AVER, PEAK, HRES
+    def set_acquisition_type(self, acq_type="AVER"):
+        self.scope.write(f":ACQ:TYPE {acq_type}")
+
+    def set_number_of_averages(self, averages=64):
+        self.scope.write(f":ACQ:AVER {averages}")
+
+    def set_offset(self, offset=0.0):
+        self.scope.write(f":TIM:OFFS {offset}")
+
+    def set_scale(self, scale=0.01):
+        self.scope.write(f":TIM:SCAL {scale}")
+
+    # Mode options: Main, XY, Roll
+    def set_mode(self, mode="MAIN"):
+        self.scope.write(f":TIM:MODE {mode}")
+
+    # coupling mode options: AC, DC, LFR, HFR
+    def set_coupling_mode(self, mode="AC"):
+        self.scope.write(f":TRIG:COUP {mode}")
+
+    def set_holdoff_time(self, holdoff_time=1e-7):
+        self.scope.write(f":TRIG:HOLD {holdoff_time}")
+
+    # trigger type options: EDGE, PULS, RUNT, WIND, NEDG, SLOP, VID, PATT, DEL, TIM, DURAT, SHOL, RS232, IIC, SPI, USB, flexray, CAN
+    def set_trigger_type(self, trigger_type="EDGE"):
+        self.scope.write(f":TRIG:MODE {trigger_type}")
+
+    # trigger slope options: POS, NEG, RFAL
+    def set_trigger_slope(self, trigger_slope="POS"):
+        self.scope.write(f":TRIG:EDGE:SLOP {trigger_slope}")
+
+    def set_trigger_level(self, trigger_level=0.0):
+        self.scope.write(f":TRIG:EDGE:LEV {trigger_level}")
+
+    def set_trigger_channel(self, channel=1):
+        self.scope.write(f":TRIG:EDGE:SOUR CHAN{channel}")
+
+    # trigger modes: AUTO, NORM, SING
+    def set_trigger_mode(self, mode="AUTO"):
+        self.scope.write(f":TRIG:SWE {mode}")
+
+    # channel set up
+
+    def initialise_channel(self, channel=1, mode="AC", attenuation=1, offset=0.0, v_range=0.0):
+        self.set_channel_coupling_mode(channel, mode)
+        self.set_channel_probe_attenuation(channel, attenuation)
+        self.set_channel_vertical_offset(channel, offset)
+        self.set_channel_vertical_range(channel, v_range)
+        self.scope.write(f"CHAN{channel}:BWL ON")
+        self.scope.write(f"CHAN{channel}:DISP ON")
+
+    def set_channel_coupling_mode(self, channel=1, mode="AC"):
+        self.scope.write(f":CHAN{channel}:COUP {mode}")
+
+    def set_channel_probe_attenuation(self, channel=1, attenuation=1):
+        self.scope.write(f":CHAN{channel}:PROB {attenuation}")
+
+    def set_channel_vertical_offset(self, channel=1, offset=0.0):
+        self.scope.write(f"CHAN{channel}:OFFS {offset}")
+
+    def set_channel_vertical_range(self, channel=1, v_range=0.0):
+        self.scope.write(f"CHAN{channel}:SCAL {v_range}")
+
+# operation order for RIGOL (from "Main_program_v1_18_RIGOL.vi"):
+# Connect
+# set memory depth, offset, scale and mode
