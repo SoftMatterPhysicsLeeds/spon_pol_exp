@@ -187,6 +187,28 @@ class Rigol4204:
     def set_channel_vertical_range(self, channel=1, v_range=0.0):
         self.scope.write(f"CHAN{channel}:SCAL {v_range}")
 
+    def get_channel_trace(self, channel=1):
+        self.scope.write(":STOP")
+        # if channel display is 'off', then don't do anything and just return.
+        if int(self.scope.query(":CHAN{channel}:DISP?").strip()) == 0:
+            return
+
+        self.scope.write(f":WAV:SOUR CHAN{channel}")
+        self.scope.write(":WAV:FORM ASC;:WAV:MODE MAX")
+        x_increment = float(self.scope.query("WAV:XINC?"))
+        y_increment = float(self.scope.query("WAV:YINC?"))
+        y_reference = float(self.scope.query("WAV:YREF?"))
+        start_time = float(self.scope.query("WAV:XOR?"))
+
+        data = self.scope.query(":WAV:DATA?")
+        if self.scope.query("WAV:MODE?").strip() == "NORM":
+            y_reference = y_reference * y_increment
+        data = [(float(x) - y_reference) *
+                y_increment for x in data.strip().split(',')]
+        time = [start_time+(x_increment * x) for x in range(len(data))]
+
+        return time, data
+
 # operation order for RIGOL (from "Main_program_v1_18_RIGOL.vi"):
 # Connect
 # set memory depth, offset, scale and mode
