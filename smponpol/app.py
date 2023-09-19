@@ -18,7 +18,8 @@ def main():
         title="SMPontaneous Polarisation",
         width=VIEWPORT_WIDTH,
         height=DRAW_HEIGHT,
-        pos=[0, 0]
+        x_pos=0,
+        y_pos=0
     )
 
     dpg.setup_dearpygui()
