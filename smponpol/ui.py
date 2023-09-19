@@ -17,6 +17,7 @@ class SMPonpolUI:
         self.temperature_window = TemperatureWindow()
         self.frequency_window = FrequencyWindow()
         self.instrument_control_window = InstrumentControlWindow()
+        self.rigol_parameter_window = RigolParameterWindow()
 
     def extra_config(self, state: SponState, instruments: SponInstruments):
         dpg.configure_item(
@@ -178,6 +179,102 @@ class TemperatureWindow:
                         )
 
 
+class RigolParameterWindow:
+    def __init__(self):
+        with dpg.window(
+            label="RIGOL parameters",
+            width=VIEWPORT_WIDTH/4,
+            height=VIEWPORT_HEIGHT/4,
+            pos=[0, 2*VIEWPORT_HEIGHT/4]
+        ):
+            with dpg.group(horizontal=True):
+                dpg.add_text("Memory Depth: ")
+                dpg.add_combo(items=["1k", "10k", "100k", "1M", "10M", "25M", "50M", "100M", "125M"],
+                              default_value="10k")
+
+            with dpg.group(horizontal=True):
+                dpg.add_text("Acquisition Type: ")
+                dpg.add_combo(items=["Normal", "Average", "Peak Detect", "High Resolution"],
+                              default_value="Average")
+
+            with dpg.group(horizontal=True):
+                dpg.add_text("Number of Averages: ")
+                dpg.add_combo(items=[2**n for n in range(1, 17, 1)],
+                              default_value=64)
+
+            with dpg.group(horizontal=True):
+                dpg.add_text("Mode: ")
+                dpg.add_combo(items=["Main", "XY", "Roll"],
+                              default_value="Main")
+
+            with dpg.group(horizontal=True):
+                dpg.add_text("Timebase: ")
+                dpg.add_input_float(default_value=0.0)
+
+            with dpg.group(horizontal=True):
+                dpg.add_text("Time Position (ms): ")
+                dpg.add_input_float(default_value=0.0)
+
+        with dpg.window(
+                label="RIGOL Trigger Settings",
+                width=VIEWPORT_WIDTH/4,
+                height=VIEWPORT_HEIGHT/4,
+                pos=[VIEWPORT_WIDTH/4, 2*VIEWPORT_HEIGHT/4]):
+            with dpg.group(horizontal=True):
+                dpg.add_text("Coupling Mode: ")
+                dpg.add_combo(items=["AC", "DC", "LF Reject",
+                              "HF Reject"], default_value="DC")
+            with dpg.group(horizontal=True):
+                dpg.add_text("Holdoff time: ")
+                dpg.add_input_float(default_value=1e-7)
+
+            with dpg.group(horizontal=True):
+                dpg.add_text("Trigger Type: ")
+                dpg.add_combo(items=["Edge", "Pulse", "Runt", "Windows", "Nth Edge", "Slope", "Video",
+                              "Pattern", "Delay", "Timeout", "Duration", "Setup/Hold", "RS232", "SPI"],
+                              default_value="Edge")
+
+            with dpg.group(horizontal=True):
+                dpg.add_text("Trigger Mode: ")
+                dpg.add_combo(items=["Auto", "Normal", "Single"],
+                              default_value="Auto")
+
+            with dpg.group(horizontal=True):
+                dpg.add_text("Trigger Channel: ")
+                dpg.add_combo(items=["Channel 1", "Channel 2",
+                              "Channel 3", "Channel 4"], default_value="Channel 1")
+
+            with dpg.group(horizontal=True):
+                dpg.add_text("Trigger Level (V): ")
+                dpg.add_input_float(default_value=0.0)
+
+            with dpg.group(horizontal=True):
+                dpg.add_text("Trigger Slope: ")
+                dpg.add_combo(items=["Rising", "Falling",
+                              "Either"], default_value="Rising")
+        self.channel_windows = []
+        for i in range(4):
+            self.channel_windows.append(RigolChannelWindow(i))
+
+
+class RigolChannelWindow:
+    def __init__(self, channel):
+        with dpg.window(label=f"RIGOL Channel {channel+1}",
+                        width=VIEWPORT_WIDTH/8,
+                        height=VIEWPORT_HEIGHT/4,
+                        pos=[channel*VIEWPORT_WIDTH/8, 3*VIEWPORT_HEIGHT/4]):
+            dpg.add_text("Coupling Mode:")
+            dpg.add_combo(items=["DC", "GND", "AC"], default_value="DC")
+            dpg.add_text("Probe Attenuation:")
+            dpg.add_combo(items=[0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5,
+                          10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000], default_value=1)
+            dpg.add_text("Vertical Range:")
+            dpg.add_input_float(default_value=0.0)
+            dpg.add_text("Vertical Offset:")
+            dpg.add_input_float(default_value=0.0)
+            dpg.add_button(label="Enable")
+
+
 def init_linkam(
     frontend: SMPonpolUI,
     instruments: SponInstruments,
@@ -233,6 +330,12 @@ def connect_to_instrument_callback(sender, app_data, user_data):
     elif user_data["instrument"] == "agilent":
         thread = threading.Thread(
             target=init_agilent,
+            args=(user_data["frontend"],
+                  user_data["instruments"], user_data["state"])
+        )
+    elif user_data["instrument"] == "rigol":
+        thread = threading.Thread(
+            target=init_rigol,
             args=(user_data["frontend"],
                   user_data["instruments"], user_data["state"])
         )
