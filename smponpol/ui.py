@@ -16,6 +16,7 @@ class SMPonpolUI:
         self.output_file_window = OutputFileWindow()
         self.temperature_window = TemperatureWindow()
         self.frequency_window = FrequencyWindow()
+        self.voltage_window = VoltageWindow()
         self.instrument_control_window = InstrumentControlWindow()
         self.rigol_parameter_window = RigolParameterWindow()
 
@@ -133,16 +134,32 @@ class FrequencyWindow:
     def __init__(self):
         with dpg.window(
             label="Frequency List",
-            width=VIEWPORT_WIDTH / 2,
+            width=VIEWPORT_WIDTH / 4,
             height=VIEWPORT_HEIGHT / 4,
             pos=[VIEWPORT_WIDTH/2, VIEWPORT_HEIGHT/4],
             no_collapse=True,
             no_close=True,
         ):
             with dpg.group(horizontal=True):
-                self.frequency_lsit = variable_list(
+                self.frequency_list = variable_list(
                     *make_variable_list_frame(1000.0, 1e-6, 20e6)
                 )
+
+
+class VoltageWindow:
+    def __init__(self):
+        with dpg.window(
+            label="Voltage List",
+            width=VIEWPORT_WIDTH/4,
+            height=VIEWPORT_HEIGHT/4,
+            pos=[3*VIEWPORT_WIDTH/4, VIEWPORT_HEIGHT/4],
+            no_collapse=True,
+            no_close=True,
+        ):
+
+            with dpg.group(horizontal=True):
+                self.voltage_list = variable_list(
+                    *make_variable_list_frame(0.01, 0.01, 10))
 
 
 class TemperatureWindow:
@@ -189,31 +206,32 @@ class RigolParameterWindow:
         ):
             with dpg.group(horizontal=True):
                 dpg.add_text("Memory Depth: ")
-                dpg.add_combo(items=["1k", "10k", "100k", "1M", "10M", "25M", "50M", "100M", "125M"],
-                              default_value="10k")
+                self.memory_depth_combo = dpg.add_combo(items=["1k", "10k", "100k", "1M", "10M", "25M", "50M", "100M", "125M"],
+                                                        default_value="10k")
 
             with dpg.group(horizontal=True):
                 dpg.add_text("Acquisition Type: ")
-                dpg.add_combo(items=["Normal", "Average", "Peak Detect", "High Resolution"],
-                              default_value="Average")
+                self.acquisition_type_combo = dpg.add_combo(items=["Normal", "Average", "Peak Detect", "High Resolution"],
+                                                            default_value="Average")
 
             with dpg.group(horizontal=True):
                 dpg.add_text("Number of Averages: ")
-                dpg.add_combo(items=[2**n for n in range(1, 17, 1)],
-                              default_value=64)
+                self.averages_combo = dpg.add_combo(items=[2**n for n in range(1, 17, 1)],
+                                                    default_value=64)
 
             with dpg.group(horizontal=True):
                 dpg.add_text("Mode: ")
-                dpg.add_combo(items=["Main", "XY", "Roll"],
-                              default_value="Main")
+                self.mode_combo = dpg.add_combo(items=["Main", "XY", "Roll"],
+                                                default_value="Main")
 
             with dpg.group(horizontal=True):
                 dpg.add_text("Timebase: ")
-                dpg.add_input_float(default_value=0.0)
+                self.timebase_input = dpg.add_input_float(default_value=0.0)
 
             with dpg.group(horizontal=True):
                 dpg.add_text("Time Position (ms): ")
-                dpg.add_input_float(default_value=0.0)
+                self.time_postion_input = dpg.add_input_float(
+                    default_value=0.0)
 
         with dpg.window(
                 label="RIGOL Trigger Settings",
@@ -222,36 +240,38 @@ class RigolParameterWindow:
                 pos=[VIEWPORT_WIDTH/4, 2*VIEWPORT_HEIGHT/4]):
             with dpg.group(horizontal=True):
                 dpg.add_text("Coupling Mode: ")
-                dpg.add_combo(items=["AC", "DC", "LF Reject",
-                              "HF Reject"], default_value="DC")
+                self.coupling_mode_combo = dpg.add_combo(items=["AC", "DC", "LF Reject",
+                                                                "HF Reject"], default_value="DC")
             with dpg.group(horizontal=True):
                 dpg.add_text("Holdoff time: ")
-                dpg.add_input_float(default_value=1e-7)
+                self.holdoff_time_combo = dpg.add_input_float(
+                    default_value=1e-7)
 
             with dpg.group(horizontal=True):
                 dpg.add_text("Trigger Type: ")
-                dpg.add_combo(items=["Edge", "Pulse", "Runt", "Windows", "Nth Edge", "Slope", "Video",
-                              "Pattern", "Delay", "Timeout", "Duration", "Setup/Hold", "RS232", "SPI"],
-                              default_value="Edge")
+                self.trigger_type_combo = dpg.add_combo(items=["Edge", "Pulse", "Runt", "Windows", "Nth Edge", "Slope", "Video",
+                                                               "Pattern", "Delay", "Timeout", "Duration", "Setup/Hold", "RS232", "SPI"],
+                                                        default_value="Edge")
 
             with dpg.group(horizontal=True):
                 dpg.add_text("Trigger Mode: ")
-                dpg.add_combo(items=["Auto", "Normal", "Single"],
-                              default_value="Auto")
+                self.trigger_mode_combo = dpg.add_combo(items=["Auto", "Normal", "Single"],
+                                                        default_value="Auto")
 
             with dpg.group(horizontal=True):
                 dpg.add_text("Trigger Channel: ")
-                dpg.add_combo(items=["Channel 1", "Channel 2",
-                              "Channel 3", "Channel 4"], default_value="Channel 1")
+                self.trigger_channel_combo = dpg.add_combo(items=["Channel 1", "Channel 2",
+                                                                  "Channel 3", "Channel 4"], default_value="Channel 1")
 
             with dpg.group(horizontal=True):
                 dpg.add_text("Trigger Level (V): ")
-                dpg.add_input_float(default_value=0.0)
+                self.trigger_level_input = dpg.add_input_float(
+                    default_value=0.0)
 
             with dpg.group(horizontal=True):
                 dpg.add_text("Trigger Slope: ")
-                dpg.add_combo(items=["Rising", "Falling",
-                              "Either"], default_value="Rising")
+                self.trigger_slope_combo = dpg.add_combo(items=["Rising", "Falling",
+                                                                "Either"], default_value="Rising")
         self.channel_windows = []
         for i in range(4):
             self.channel_windows.append(RigolChannelWindow(i))
