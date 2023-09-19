@@ -4,7 +4,7 @@ from smponpol.dataclasses import variable_list, range_selector_window
 import numpy as np
 import dearpygui.dearpygui as dpg
 
-from smponpol.instruments import LinkamHotstage, Agilent33220A
+from smponpol.instruments import LinkamHotstage, Agilent33220A, Rigol4204
 from smponpol.dataclasses import SponState, SponInstruments
 VIEWPORT_WIDTH = 1920
 DRAW_HEIGHT = 1080
@@ -39,12 +39,23 @@ class SMPonpolUI:
                 "state": state,
             },
         )
+        dpg.configure_item(
+            self.instrument_control_window.rigol_initialise,
+            callback=connect_to_instrument_callback,
+            user_data={
+                "instrument": "rigol",
+                "frontend": self,
+                "instruments": instruments,
+                "state": state,
+            },
+        )
 
 
 class InstrumentControlWindow:
     def __init__(self):
         self.linkam_status = "Disconnected"
         self.agilent_status = "Disconnected"
+        self.rigol_status = "Disconnected"
         with dpg.window(label="Status Window",
                         pos=[0, 0],
                         width=VIEWPORT_WIDTH/2,
@@ -69,6 +80,15 @@ class InstrumentControlWindow:
                 )
                 self.agilent_com_selector = dpg.add_combo(width=200)
                 self.agilent_initialise = dpg.add_button(
+                    label="Initialise",
+                )
+            with dpg.group(horizontal=True):
+                dpg.add_text("Oscilloscope (RIGOL): ")
+                self.rigol_status = dpg.add_text(
+                    f"{self.rigol_status}", tag="rigol_status_display"
+                )
+                self.rigol_com_selector = dpg.add_combo(width=200)
+                self.rigol_initialise = dpg.add_button(
                     label="Initialise",
                 )
 
@@ -163,7 +183,8 @@ def init_linkam(
     instruments: SponInstruments,
     state: SponState
 ) -> None:
-    linkam = LinkamHotstage(dpg.get_value(frontend.instrument_control_window.linkam_com_selector))
+    linkam = LinkamHotstage(dpg.get_value(
+        frontend.instrument_control_window.linkam_com_selector))
     try:
         linkam.current_temperature()
         dpg.set_value(frontend.linkam_status, "Connected")
@@ -172,7 +193,8 @@ def init_linkam(
 
         state.linkam_connection_status = "Connected"
         with open("address.dat", "w") as f:
-            f.write(dpg.get_value(frontend.instrument_control_window.linkam_com_selector))
+            f.write(dpg.get_value(
+                frontend.instrument_control_window.linkam_com_selector))
 
     except pyvisa.errors.VisaIOError:
         dpg.set_value(frontend.linkam_status, "Couldn't connect")
@@ -181,11 +203,24 @@ def init_linkam(
 def init_agilent(
     frontend: SMPonpolUI, instruments: SponInstruments, state: SponState
 ) -> None:
-    agilent = Agilent33220A(dpg.get_value(frontend.instrument_control_window.agilent_com_selector))
-    dpg.set_value(frontend.agilent_status, "Connected")
-    dpg.hide_item(frontend.agilent_initialise)
+    agilent = Agilent33220A(dpg.get_value(
+        frontend.instrument_control_window.agilent_com_selector))
+    dpg.set_value(
+        frontend.instrument_control_window.agilent_status, "Connected")
+    dpg.hide_item(frontend.instrument_control_window.agilent_initialise)
     instruments.agilent = agilent
     state.agilent_connection_status = "Connected"
+
+
+def init_rigol(
+    frontend: SMPonpolUI, instruments: SponInstruments, state: SponState
+) -> None:
+    rigol = Rigol4204(dpg.get_value(
+        frontend.instrument_control_window.rigol_com_selector))
+    dpg.set_value(frontend.instrument_control_window.rigol_status, "Connected")
+    dpg.hide_item(frontend.instrument_control_window.rigol_initialise)
+    instruments.rigol = rigol
+    state.rigol_connection_status = "Connected"
 
 
 def connect_to_instrument_callback(sender, app_data, user_data):
@@ -195,6 +230,13 @@ def connect_to_instrument_callback(sender, app_data, user_data):
             args=(user_data["frontend"],
                   user_data["instruments"], user_data["state"]),
         )
+    elif user_data["instrument"] == "agilent":
+        thread = threading.Thread(
+            target=init_agilent,
+            args=(user_data["frontend"],
+                  user_data["instruments"], user_data["state"])
+        )
+
     thread.daemon = True
     thread.start()
 
