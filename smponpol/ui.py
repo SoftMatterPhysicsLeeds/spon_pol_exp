@@ -6,8 +6,8 @@ import dearpygui.dearpygui as dpg
 
 from smponpol.instruments import LinkamHotstage, Agilent33220A, Rigol4204
 from smponpol.dataclasses import SponState, SponInstruments
-VIEWPORT_WIDTH = 1200
-DRAW_HEIGHT = 800
+VIEWPORT_WIDTH = 1920
+DRAW_HEIGHT = 900
 VIEWPORT_HEIGHT = DRAW_HEIGHT - 40
 
 
