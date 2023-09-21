@@ -1,5 +1,5 @@
-from dataclasses import dataclass
-from smponpol.instruments import LinkamHotstage
+from dataclasses import dataclass, field
+from smponpol.instruments import LinkamHotstage, Agilent33220A, Rigol4204
 
 
 @dataclass
@@ -8,6 +8,13 @@ class SponState:
     linkam_action: str = "Idle"
     agilent_connection_status: str = "Disconnected"
     rigol_connection_status: str = "Disconnected"
+    measurement_status: str = "Idle"
+    temperature_list: list = field(default_factory=list)
+    freq_list: list = field(default_factory=list)
+    voltage_list: list = field(default_factory=list)
+    temperature_step: int = 0
+    frequency_step: int = 0
+    voltage_step: int = 0
 
 
 @dataclass
@@ -35,3 +42,5 @@ class variable_list:
 @dataclass
 class SponInstruments:
     linkam: LinkamHotstage | None = None
+    agilent: Agilent33220A | None = None
+    rigol: Rigol4204 | None = None

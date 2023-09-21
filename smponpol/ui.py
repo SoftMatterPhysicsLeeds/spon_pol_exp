@@ -19,6 +19,7 @@ class SMPonpolUI:
         self.voltage_window = VoltageWindow()
         self.instrument_control_window = InstrumentControlWindow()
         self.rigol_parameter_window = RigolParameterWindow()
+        self.results_window = ResultsWindow()
 
     def extra_config(self, state: SponState, instruments: SponInstruments):
         dpg.configure_item(
@@ -95,48 +96,13 @@ class InstrumentControlWindow:
                 )
 
 
-class OutputFileWindow:
-    def __init__(self):
-        with dpg.window(label="Output File Settings",
-                        pos=[VIEWPORT_WIDTH/2, 0],
-                        width=VIEWPORT_WIDTH/2,
-                        height=VIEWPORT_HEIGHT/4,
-                        no_collapse=True,
-                        no_close=True,):
-            with dpg.group(horizontal=True):
-                dpg.add_text(f"{'Folder':>15}: ")
-                self.output_folder = dpg.add_input_text(
-                    default_value=".\\Data")
-                dpg.add_button(label="Browse",
-                               callback=lambda: dpg.show_item("folder_dialog"))
-            with dpg.group(horizontal=True):
-                dpg.add_text(f"{'Sample Name':>15}: ")
-                self.sample_name = dpg.add_input_text(default_value="Sample 1")
-            with dpg.group(horizontal=True):
-                dpg.add_text(f"{'Cell Type':>15}: ")
-                self.sample_name = dpg.add_input_text(default_value="HG")
-            with dpg.group(horizontal=True):
-                dpg.add_text(f"{'Cell Thickness':>15}: ")
-                self.sample_name = dpg.add_input_text(default_value="5um")
-
-        dpg.add_file_dialog(
-            directory_selector=True,
-            show=False,
-            callback=saveas_folder_callback,
-            user_data=self.output_folder,
-            id="folder_dialog",
-            width=700,
-            height=400
-        )
-
-
 class FrequencyWindow:
     def __init__(self):
         with dpg.window(
             label="Frequency List",
-            width=VIEWPORT_WIDTH / 4,
+            width=VIEWPORT_WIDTH / 6,
             height=VIEWPORT_HEIGHT / 4,
-            pos=[VIEWPORT_WIDTH/2, VIEWPORT_HEIGHT/4],
+            pos=[VIEWPORT_WIDTH/6, VIEWPORT_HEIGHT/4],
             no_collapse=True,
             no_close=True,
         ):
@@ -150,9 +116,9 @@ class VoltageWindow:
     def __init__(self):
         with dpg.window(
             label="Voltage List",
-            width=VIEWPORT_WIDTH/4,
+            width=VIEWPORT_WIDTH/6,
             height=VIEWPORT_HEIGHT/4,
-            pos=[3*VIEWPORT_WIDTH/4, VIEWPORT_HEIGHT/4],
+            pos=[2*VIEWPORT_WIDTH/6, VIEWPORT_HEIGHT/4],
             no_collapse=True,
             no_close=True,
         ):
@@ -167,7 +133,7 @@ class TemperatureWindow:
 
         with dpg.window(
             label="Temperature List",
-            width=VIEWPORT_WIDTH / 2,
+            width=VIEWPORT_WIDTH / 6,
             height=VIEWPORT_HEIGHT / 4,
             pos=[0, VIEWPORT_HEIGHT/4],
             no_collapse=True,
@@ -177,23 +143,23 @@ class TemperatureWindow:
                 self.temperature_list = variable_list(
                     *make_variable_list_frame(25.0, -40, 250)
                 )
-                with dpg.group():
-                    with dpg.group(horizontal=True):
-                        self.go_to_temp_button = dpg.add_button(label="Go to:")
-                        self.go_to_temp_input = dpg.add_input_float(
-                            default_value=25, width=150
-                        )
-                        dpg.add_text("°C")
-                    with dpg.group(horizontal=True):
-                        dpg.add_text("Rate (°C/min): ")
-                        self.T_rate = dpg.add_input_double(
-                            default_value=10, width=150
-                        )
-                    with dpg.group(horizontal=True):
-                        dpg.add_text("Stab. Time (s)")
-                        self.stab_time = dpg.add_input_double(
-                            default_value=1, width=150
-                        )
+                # with dpg.group():
+                #     with dpg.group(horizontal=True):
+                #         self.go_to_temp_button = dpg.add_button(label="Go to:")
+                #         self.go_to_temp_input = dpg.add_input_float(
+                #             default_value=25, width=150
+                #         )
+                #         dpg.add_text("°C")
+                #     with dpg.group(horizontal=True):
+                #         dpg.add_text("Rate (°C/min): ")
+                #         self.T_rate = dpg.add_input_double(
+                #             default_value=10, width=150
+                #         )
+                #     with dpg.group(horizontal=True):
+                #         dpg.add_text("Stab. Time (s)")
+                #         self.stab_time = dpg.add_input_double(
+                #             default_value=1, width=150
+                #         )
 
 
 class RigolParameterWindow:
@@ -293,6 +259,61 @@ class RigolChannelWindow:
             dpg.add_text("Vertical Offset:")
             dpg.add_input_float(default_value=0.0)
             dpg.add_button(label="Enable")
+
+
+class OutputFileWindow:
+    def __init__(self):
+        with dpg.window(label="Output File Settings",
+                        pos=[VIEWPORT_WIDTH/2, 0],
+                        width=VIEWPORT_WIDTH/2,
+                        height=VIEWPORT_HEIGHT/7,
+                        no_collapse=True,
+                        no_close=True,):
+            with dpg.group(horizontal=True):
+                dpg.add_text(f"{'Folder':>15}: ")
+                self.output_folder = dpg.add_input_text(
+                    default_value=".\\Data")
+                dpg.add_button(label="Browse",
+                               callback=lambda: dpg.show_item("folder_dialog"))
+            with dpg.group(horizontal=True):
+                dpg.add_text(f"{'Sample Name':>15}: ")
+                self.sample_name = dpg.add_input_text(default_value="Sample 1")
+            with dpg.group(horizontal=True):
+                dpg.add_text(f"{'Cell Type':>15}: ")
+                self.sample_name = dpg.add_input_text(default_value="HG")
+            with dpg.group(horizontal=True):
+                dpg.add_text(f"{'Cell Thickness':>15}: ")
+                self.sample_name = dpg.add_input_text(default_value="5um")
+
+        dpg.add_file_dialog(
+            directory_selector=True,
+            show=False,
+            callback=saveas_folder_callback,
+            user_data=self.output_folder,
+            id="folder_dialog",
+            width=700,
+            height=400
+        )
+
+
+class ResultsWindow:
+    def __init__(self):
+        with dpg.window(label="Results",
+                        width=VIEWPORT_WIDTH/2,
+                        height=3*VIEWPORT_HEIGHT/7,
+                        pos=[VIEWPORT_WIDTH/2, VIEWPORT_HEIGHT/7]):
+
+            with dpg.plot(height=3*VIEWPORT_HEIGHT/7,
+                          width=VIEWPORT_WIDTH/2,
+                          anti_aliased=True):
+                self.time_axis = dpg.add_plot_axis(
+                    dpg.mvXAxis, label="time (s)")
+                self.voltage_axis = dpg.add_plot_axis(
+                    dpg.mvYAxis, label="V")
+
+                self.results = dpg.add_scatter_series(
+                    x=[], y=[], parent=self.voltage_axis)
+
 
 
 def init_linkam(
