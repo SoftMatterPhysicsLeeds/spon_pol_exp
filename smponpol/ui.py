@@ -18,8 +18,8 @@ class SMPonpolUI:
         self.frequency_window = FrequencyWindow()
         self.voltage_window = VoltageWindow()
         self.instrument_control_window = InstrumentControlWindow()
-        self.rigol_parameter_window = RigolParameterWindow()
         self.results_window = ResultsWindow()
+        self.temperature_log_window = TemperatureLogWindow()
 
     def extra_config(self, state: SponState, instruments: SponInstruments):
         dpg.configure_item(
@@ -95,6 +95,8 @@ class InstrumentControlWindow:
                     label="Initialise",
                 )
 
+        self.rigol_parameter_window = RigolParameterWindow()
+
 
 class FrequencyWindow:
     def __init__(self):
@@ -168,7 +170,8 @@ class RigolParameterWindow:
             label="RIGOL parameters",
             width=VIEWPORT_WIDTH/4,
             height=VIEWPORT_HEIGHT/4,
-            pos=[0, 2*VIEWPORT_HEIGHT/4]
+            pos=[0, VIEWPORT_HEIGHT/4-125],
+            collapsed=True
         ):
             with dpg.group(horizontal=True):
                 dpg.add_text("Memory Depth: ")
@@ -203,7 +206,8 @@ class RigolParameterWindow:
                 label="RIGOL Trigger Settings",
                 width=VIEWPORT_WIDTH/4,
                 height=VIEWPORT_HEIGHT/4,
-                pos=[VIEWPORT_WIDTH/4, 2*VIEWPORT_HEIGHT/4]):
+                pos=[0, VIEWPORT_HEIGHT/4-100],
+                collapsed=True):
             with dpg.group(horizontal=True):
                 dpg.add_text("Coupling Mode: ")
                 self.coupling_mode_combo = dpg.add_combo(items=["AC", "DC", "LF Reject",
@@ -314,6 +318,22 @@ class ResultsWindow:
                 self.results = dpg.add_scatter_series(
                     x=[], y=[], parent=self.voltage_axis)
 
+
+class TemperatureLogWindow:
+    def __init__(self):
+        with dpg.window(label="Temperature Log",
+                        width=VIEWPORT_WIDTH/2,
+                        height=3*VIEWPORT_HEIGHT/7,
+                        pos=[VIEWPORT_WIDTH/2, 4*VIEWPORT_HEIGHT/7]):
+            with dpg.plot(height=3*VIEWPORT_HEIGHT/7,
+                          width=VIEWPORT_WIDTH/2,
+                          anti_aliased=True):
+                self.time_axis = dpg.add_plot_axis(
+                    dpg.mvXAxis, label="time (s)")
+                self.temperature_axis = dpg.add_plot_axis(
+                    dpg.mvYAxis, label="Temperature (C)")
+                self.temperature_log = dpg.add_line_series(
+                    x=[], y=[], parent=self.temperature_axis)
 
 
 def init_linkam(

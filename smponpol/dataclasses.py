@@ -15,6 +15,8 @@ class SponState:
     temperature_step: int = 0
     frequency_step: int = 0
     voltage_step: int = 0
+    temperature_log_time: list = field(default_factory=list)
+    temperature_log_temperature: list = field(default_factory=list)
 
 
 @dataclass
