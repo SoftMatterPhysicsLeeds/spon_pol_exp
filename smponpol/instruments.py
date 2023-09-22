@@ -105,9 +105,12 @@ class Agilent33220A:
         self.wfg.write(f"VOLT:OFFS {offset}")
 
     def set_output(self, output="OFF"):
-        self.wfg.write(f":OUTP {output}")
+        self.wfg.write(f"OUTP {output}")
 
-    def close_wfg(self):
+    def set_output_load(self, output="INF"):
+        self.wfg.write(f"OUTP:LOAD {output}")
+
+    def close(self):
         self.wfg.close()
 
 
@@ -208,6 +211,9 @@ class Rigol4204:
         time = [start_time+(x_increment * x) for x in range(len(data))]
 
         return time, data
+
+    def close(self):
+        self.scope.close()
 
 # operation order for RIGOL (from "Main_program_v1_18_RIGOL.vi"):
 # Connect
