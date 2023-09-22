@@ -208,9 +208,9 @@ class Rigol4204:
             y_reference = y_reference * y_increment
         data = [(float(x) - y_reference) *
                 y_increment for x in data.strip().split(',')]
-        time = [start_time+(x_increment * x) for x in range(len(data))]
+        times = [start_time+(x_increment * x) for x in range(len(data))]
 
-        return time, data
+        return times, data
 
     def close(self):
         self.scope.close()

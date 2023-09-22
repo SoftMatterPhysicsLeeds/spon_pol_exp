@@ -3,6 +3,7 @@ from smponpol.dataclasses import SponState, SponInstruments
 import dearpygui.dearpygui as dpg
 import pyvisa
 import time
+import threading
 
 
 def find_instruments(frontend: SMPonpolUI):
@@ -77,4 +78,48 @@ def start_measurement(state: SponState, frontend: SMPonpolUI, instruments: SponI
 
     state.temperature_list = [round(x, 2) for x in state.temperature_list]
 
-    state.measurement_status = f"Setting temperature to {state.temperature_list[0]}"
+    state.measurement_status = "Setting temperature"
+
+
+def update_measurement(state: SponState, frontend: SMPonpolUI, instruments: SponInstruments):
+
+    if state.measurement_status == "Setting temperature" and (state.linkam_action == "Stopped" or state.linkam_action == "Holding"):
+        instruments.linkam.set_temperature(
+            state.temperature_list[state.temperature_step], 10
+        )
+        state.measurement_status = f"Going to T: {state.temperature_list[state.temperature_step]}"
+
+    elif (
+            state.measurement_status == f"Going to T: {state.temperature_list[state.temperature_step]}" and state.linkam_action == "Holding"):
+
+        state.measurement_status = (
+            "Stabilising temperature for 10s"
+        )
+
+    elif state.measurement_status == "Stabilising temperature for 10s":
+        wait_time = time.time() - state.temperature_stable_timer
+
+        if wait_time > 10:
+            state.measurement_status = "Temperature Stabilised"
+            state.temperature_stable_timer = 0.0
+        state.temperature_stable_timer = time.time()
+
+    elif state.measurement_status == "Temperature Stabilised":
+        state.measurement_status = "Collecting Data"
+        setup_and_run_measurement()
+
+
+def setup_and_run_measurement(state: SponState, frontend: SMPonpolUI, instruments: SponInstruments):
+    thread = threading.Thread(
+        target=run_measurement, args=(state, frontend, instruments)
+    )
+    thread.daemon = True
+    thread.start()
+
+
+def run_measurement(state: SponState, frontend: SMPonpolUI, instruments: SponInstruments):
+    instruments.agilent.set_voltage(state.voltage_list[state.voltage_step])
+    instruments.agilent.set_frequency(
+        state.freq_list[state.frequency_step])
+    
+
