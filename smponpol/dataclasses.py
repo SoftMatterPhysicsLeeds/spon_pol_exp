@@ -18,7 +18,7 @@ class SponState:
     temperature_log_time: list = field(default_factory=list)
     temperature_log_temperature: list = field(default_factory=list)
     temperature_stable_timer: float = 0.0
-    
+    output_filename: str = ""
 
 
 @dataclass

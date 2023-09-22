@@ -284,10 +284,10 @@ class OutputFileWindow:
                 self.sample_name = dpg.add_input_text(default_value="Sample 1")
             with dpg.group(horizontal=True):
                 dpg.add_text(f"{'Cell Type':>15}: ")
-                self.sample_name = dpg.add_input_text(default_value="HG")
+                self.cell_type = dpg.add_input_text(default_value="HG")
             with dpg.group(horizontal=True):
                 dpg.add_text(f"{'Cell Thickness':>15}: ")
-                self.sample_name = dpg.add_input_text(default_value="5um")
+                self.cell_thickness = dpg.add_input_text(default_value="5um")
 
         dpg.add_file_dialog(
             directory_selector=True,

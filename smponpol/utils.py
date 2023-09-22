@@ -75,8 +75,10 @@ def start_measurement(state: SponState, frontend: SMPonpolUI, instruments: SponI
             "items"
         ]
     ]
-
+# M5 0.89cm2 51.3um 50uC10 6.00 Volts 63.0 Hz trace 1.dat
     state.temperature_list = [round(x, 2) for x in state.temperature_list]
+
+    state.output_filename = f"{dpg.get_value(frontend.output_file_window.output_folder)}\\{dpg.get_value(frontend.output_file_window.sample_name)} {dpg.get_value(frontend.output_file_window.cell_type)} {dpg.get_value(frontend.output_file_window.cell_thickness)}"
 
     state.measurement_status = "Setting temperature"
 
@@ -118,8 +120,16 @@ def setup_and_run_measurement(state: SponState, frontend: SMPonpolUI, instrument
 
 
 def run_measurement(state: SponState, frontend: SMPonpolUI, instruments: SponInstruments):
+    instruments.rigol.scope.write(":RUN")
     instruments.agilent.set_voltage(state.voltage_list[state.voltage_step])
     instruments.agilent.set_frequency(
         state.freq_list[state.frequency_step])
-    
+    time.sleep(5)
+    times, channel1_data = instruments.rigol.get_channel_trace(1)
+    times, channel2_data = instruments.rigol.get_channel_trace(2)
 
+    export_data_file(times, channel1_data, channel2_data)
+
+
+def export_data_file(state: SponState, times, channel1, channel2):
+    output_filename = state.output_filename + f"{state.voltage_list[state.voltage_step]} Volts" + f"{state.freq_list[state.frequency_step]} Hz" + f"{state.temperature_list[state.temperature_step]} C.dat"
