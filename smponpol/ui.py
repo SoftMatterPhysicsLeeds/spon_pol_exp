@@ -21,14 +21,32 @@ class SMPonpolUI:
         self.results_window = ResultsWindow()
         self.temperature_log_window = TemperatureLogWindow()
 
+    def redraw_windows(self, viewport_height, viewport_width):
+        dpg.configure_item(self.output_file_window.output_file_window,
+                           pos=[viewport_width/2, 0],
+                           width=viewport_width/2,
+                           height=viewport_height/7)
+
+        dpg.configure_item(self.temperature_window.temperature_window,
+                           pos=[0, viewport_height/4],
+                           width=viewport_width/6,
+                           height=viewport_height/4)
+
+        dpg.configure_item(self.frequency_window.frequency_window,
+                           pos=[viewport_width/6, viewport_height/4],
+                           width=viewport_width/6,
+                           height=viewport_height/4)
+
+
+
+
     def extra_config(self, state: SponState, instruments: SponInstruments):
         dpg.configure_item(
             self.instrument_control_window.linkam_initialise,
             callback=connect_to_instrument_callback,
             user_data={
                 "instrument": "linkam",
-                "frontend": self,
-                "instruments": instruments,
+                "frontend": self, "instruments": instruments,
                 "state": state,
             },
         )
@@ -107,7 +125,7 @@ class FrequencyWindow:
             pos=[VIEWPORT_WIDTH/6, VIEWPORT_HEIGHT/4],
             no_collapse=True,
             no_close=True,
-        ):
+        ) as self.frequency_window:
             with dpg.group(horizontal=True):
                 self.frequency_list = variable_list(
                     *make_variable_list_frame(1000.0, 1e-6, 20e6)
@@ -123,7 +141,7 @@ class VoltageWindow:
             pos=[2*VIEWPORT_WIDTH/6, VIEWPORT_HEIGHT/4],
             no_collapse=True,
             no_close=True,
-        ):
+        ) as self.voltage_window:
 
             with dpg.group(horizontal=True):
                 self.voltage_list = variable_list(
@@ -140,7 +158,7 @@ class TemperatureWindow:
             pos=[0, VIEWPORT_HEIGHT/4],
             no_collapse=True,
             no_close=True,
-        ):
+        ) as self.temperature_window:
             with dpg.group(horizontal=True):
                 self.temperature_list = variable_list(
                     *make_variable_list_frame(25.0, -40, 250)
@@ -272,7 +290,7 @@ class OutputFileWindow:
                         width=VIEWPORT_WIDTH/2,
                         height=VIEWPORT_HEIGHT/7,
                         no_collapse=True,
-                        no_close=True,):
+                        no_close=True,) as self.output_file_window:
             with dpg.group(horizontal=True):
                 dpg.add_text(f"{'Folder':>15}: ")
                 self.output_folder = dpg.add_input_text(

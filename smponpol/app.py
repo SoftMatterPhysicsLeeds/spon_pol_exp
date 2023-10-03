@@ -33,8 +33,14 @@ def main():
     thread = threading.Thread(target=find_instruments, args=(ui,))
     thread.daemon = True
     thread.start()
-
+    viewport_width = dpg.get_viewport_client_width()
+    viewport_height = dpg.get_viewport_client_height()
     while dpg.is_dearpygui_running():
+        # check if viewport has been resized. If it has, redraw windows
+        if viewport_width != dpg.get_viewport_client_width() or viewport_height != dpg.get_viewport_client_height():
+            # redraw_windows.
+            viewport_width = dpg.get_viewport_client_width()
+            viewport_height = dpg.get_viewport_client_height()       
         dpg.render_dearpygui_frame()
 
     dpg.destroy_context()
