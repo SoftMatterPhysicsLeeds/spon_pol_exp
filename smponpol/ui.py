@@ -37,8 +37,42 @@ class SMPonpolUI:
                            width=viewport_width/6,
                            height=viewport_height/4)
 
+        dpg.configure_item(self.voltage_window.voltage_window,
+                           pos=[2*viewport_width/6, viewport_height/4],
+                           width=viewport_width/6,
+                           height=viewport_height/4)
 
+        dpg.configure_item(self.instrument_control_window.intrument_control_window,
+                           pos=[0, 0],
+                           width=viewport_width/2,
+                           height=viewport_height/4)
 
+        dpg.configure_item(self.results_window.results_window,
+                           pos=[viewport_width/2, viewport_height/7],
+                           width=viewport_width/2,
+                           height=3*viewport_height/7)
+
+        dpg.configure_item(self.temperature_log_window.temperature_log_window,
+                           pos=[viewport_width/2, 4*viewport_height/7],
+                           width=viewport_width/2,
+                           height=3*viewport_height/7)
+
+        dpg.configure_item(self.instrument_control_window.rigol_parameter_window.rigol_parameter_window,
+                           pos=[0, viewport_height/4 - 125],
+                           width=viewport_width/4,
+                           height=viewport_height/4)
+
+        dpg.configure_item(self.instrument_control_window.rigol_parameter_window.rigol_trigger_settings,
+                           pos=[0, viewport_height/4-100],
+                           width=viewport_width/4,
+                           height=viewport_height/4)
+
+        for i, window in enumerate(self.instrument_control_window.rigol_parameter_window.channel_windows):
+                
+            dpg.configure_item(window.channel_window,
+                               pos=[i*viewport_width/8, 3*viewport_height/4],
+                               width=viewport_width/8,
+                               height=viewport_height/4)
 
     def extra_config(self, state: SponState, instruments: SponInstruments):
         dpg.configure_item(
@@ -82,7 +116,7 @@ class InstrumentControlWindow:
                         width=VIEWPORT_WIDTH/2,
                         height=VIEWPORT_HEIGHT/4,
                         no_collapse=True,
-                        no_close=True,):
+                        no_close=True,) as self.intrument_control_window:
 
             with dpg.group(horizontal=True):
                 dpg.add_text("Linkam: ")
@@ -190,7 +224,7 @@ class RigolParameterWindow:
             height=VIEWPORT_HEIGHT/4,
             pos=[0, VIEWPORT_HEIGHT/4-125],
             collapsed=True
-        ):
+        ) as self.rigol_parameter_window:
             with dpg.group(horizontal=True):
                 dpg.add_text("Memory Depth: ")
                 self.memory_depth_combo = dpg.add_combo(items=["1k", "10k", "100k", "1M", "10M", "25M", "50M", "100M", "125M"],
@@ -225,7 +259,7 @@ class RigolParameterWindow:
                 width=VIEWPORT_WIDTH/4,
                 height=VIEWPORT_HEIGHT/4,
                 pos=[0, VIEWPORT_HEIGHT/4-100],
-                collapsed=True):
+                collapsed=True) as self.rigol_trigger_settings:
             with dpg.group(horizontal=True):
                 dpg.add_text("Coupling Mode: ")
                 self.coupling_mode_combo = dpg.add_combo(items=["AC", "DC", "LF Reject",
@@ -270,7 +304,7 @@ class RigolChannelWindow:
         with dpg.window(label=f"RIGOL Channel {channel+1}",
                         width=VIEWPORT_WIDTH/8,
                         height=VIEWPORT_HEIGHT/4,
-                        pos=[channel*VIEWPORT_WIDTH/8, 3*VIEWPORT_HEIGHT/4]):
+                        pos=[channel*VIEWPORT_WIDTH/8, 3*VIEWPORT_HEIGHT/4]) as self.channel_window:
             dpg.add_text("Coupling Mode:")
             dpg.add_combo(items=["DC", "GND", "AC"], default_value="DC")
             dpg.add_text("Probe Attenuation:")
@@ -323,7 +357,7 @@ class ResultsWindow:
         with dpg.window(label="Results",
                         width=VIEWPORT_WIDTH/2,
                         height=3*VIEWPORT_HEIGHT/7,
-                        pos=[VIEWPORT_WIDTH/2, VIEWPORT_HEIGHT/7]):
+                        pos=[VIEWPORT_WIDTH/2, VIEWPORT_HEIGHT/7]) as self.results_window:
 
             with dpg.plot(height=3*VIEWPORT_HEIGHT/7,
                           width=VIEWPORT_WIDTH/2,
@@ -342,7 +376,7 @@ class TemperatureLogWindow:
         with dpg.window(label="Temperature Log",
                         width=VIEWPORT_WIDTH/2,
                         height=3*VIEWPORT_HEIGHT/7,
-                        pos=[VIEWPORT_WIDTH/2, 4*VIEWPORT_HEIGHT/7]):
+                        pos=[VIEWPORT_WIDTH/2, 4*VIEWPORT_HEIGHT/7]) as self.temperature_log_window:
             with dpg.plot(height=3*VIEWPORT_HEIGHT/7,
                           width=VIEWPORT_WIDTH/2,
                           anti_aliased=True):

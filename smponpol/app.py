@@ -40,7 +40,8 @@ def main():
         if viewport_width != dpg.get_viewport_client_width() or viewport_height != dpg.get_viewport_client_height():
             # redraw_windows.
             viewport_width = dpg.get_viewport_client_width()
-            viewport_height = dpg.get_viewport_client_height()       
+            viewport_height = dpg.get_viewport_client_height()
+            ui.redraw_windows(viewport_height, viewport_width)
         dpg.render_dearpygui_frame()
 
     dpg.destroy_context()
