@@ -70,9 +70,9 @@ class SMPonpolUI:
         for i, window in enumerate(self.instrument_control_window.rigol_parameter_window.channel_windows):
                 
             dpg.configure_item(window.channel_window,
-                               pos=[i*viewport_width/8, 3*viewport_height/4],
+                               pos=[i*viewport_width/8, 2*viewport_height/4],
                                width=viewport_width/8,
-                               height=viewport_height/4)
+                               height=2*(viewport_height/2)/3)
 
     def extra_config(self, state: SponState, instruments: SponInstruments):
         dpg.configure_item(
@@ -303,8 +303,8 @@ class RigolChannelWindow:
     def __init__(self, channel):
         with dpg.window(label=f"RIGOL Channel {channel+1}",
                         width=VIEWPORT_WIDTH/8,
-                        height=VIEWPORT_HEIGHT/4,
-                        pos=[channel*VIEWPORT_WIDTH/8, 3*VIEWPORT_HEIGHT/4]) as self.channel_window:
+                        height=2*(VIEWPORT_HEIGHT/2)/3,
+                        pos=[channel*VIEWPORT_WIDTH/8, 2*VIEWPORT_HEIGHT/4]) as self.channel_window:
             dpg.add_text("Coupling Mode:")
             dpg.add_combo(items=["DC", "GND", "AC"], default_value="DC")
             dpg.add_text("Probe Attenuation:")
