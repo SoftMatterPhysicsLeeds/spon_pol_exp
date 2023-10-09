@@ -46,6 +46,13 @@ def main():
 
     dpg.destroy_context()
 
+    if instruments.linkam:
+        instruments.linkam.close()
+    if instruments.agilent:
+        instruments.agilent.close()
+    if instruments.rigol:
+        instruments.rigol.close()
+
 
 if __name__ == "__main__":
     main()

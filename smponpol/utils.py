@@ -132,9 +132,11 @@ def run_measurement(state: SponState, frontend: SMPonpolUI, instruments: SponIns
 
 
 def export_data_file(state: SponState, times, channel1, channel2):
-    output_filename = state.output_filename + f"{state.voltage_list[state.voltage_step]} Volts" + f"{state.freq_list[state.frequency_step]} Hz" + f"{state.temperature_list[state.temperature_step]} C.dat"
+    output_filename = state.output_filename + f"{state.voltage_list[state.voltage_step]} Volts" + \
+        f"{state.freq_list[state.frequency_step]} Hz" + \
+        f"{state.temperature_list[state.temperature_step]} C.dat"
 
     with open(output_filename, 'w') as f:
         f.write("time\tChannel1\tChannel2\n")
-        for time, channel1, channel2 in zip(times, channel1, channel2):
-            f.write(f"{time}\t{channel1}\t{channel2}\n")
+        for time_inc, channel1, channel2 in zip(times, channel1, channel2):
+            f.write(f"{time_inc}\t{channel1}\t{channel2}\n")
