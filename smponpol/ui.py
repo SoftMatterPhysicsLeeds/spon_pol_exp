@@ -1,11 +1,10 @@
 import pyvisa
 import threading
-from smponpol.dataclasses import variable_list, range_selector_window
 import numpy as np
 import dearpygui.dearpygui as dpg
 
 from smponpol.instruments import LinkamHotstage, Agilent33220A, Rigol4204
-from smponpol.dataclasses import SponState, SponInstruments
+from smponpol.dataclasses import SponState, SponInstruments, variable_list, range_selector_window
 VIEWPORT_WIDTH = 1920
 DRAW_HEIGHT = 1080-40
 VIEWPORT_HEIGHT = DRAW_HEIGHT - 40
@@ -20,6 +19,7 @@ class SMPonpolUI:
         self.instrument_control_window = InstrumentControlWindow()
         self.results_window = ResultsWindow()
         self.temperature_log_window = TemperatureLogWindow()
+        self.start_stop_window = StartStopWindow()
 
     def redraw_windows(self, viewport_height, viewport_width):
         dpg.configure_item(self.output_file_window.output_file_window,
@@ -68,7 +68,7 @@ class SMPonpolUI:
                            height=viewport_height/4)
 
         for i, window in enumerate(self.instrument_control_window.rigol_parameter_window.channel_windows):
-                
+
             dpg.configure_item(window.channel_window,
                                pos=[i*viewport_width/8, 2*viewport_height/4],
                                width=viewport_width/8,
@@ -386,6 +386,19 @@ class TemperatureLogWindow:
                     dpg.mvYAxis, label="Temperature (C)")
                 self.temperature_log = dpg.add_line_series(
                     x=[], y=[], parent=self.temperature_axis)
+
+
+class StartStopWindow:
+    def __init__(self):
+        with dpg.window(no_title_bar=True,
+                        width=VIEWPORT_WIDTH/2,
+                        height=VIEWPORT_HEIGHT/6,
+                        pos=[0, 5*VIEWPORT_HEIGHT/6]) as self.button_window:
+
+            self.start_button = dpg.add_button(
+                label="Start", width=VIEWPORT_WIDTH/4, height=VIEWPORT_HEIGHT/6, pos=[0, 0])
+            self.stop_button = dpg.add_button(
+                label="Stop", width=VIEWPORT_WIDTH/4, height=VIEWPORT_HEIGHT/6, pos=[VIEWPORT_WIDTH/4, 0])
 
 
 def init_linkam(
