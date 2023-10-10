@@ -74,6 +74,20 @@ class SMPonpolUI:
                                width=viewport_width/8,
                                height=2*(viewport_height/2)/3)
 
+        dpg.configure_item(self.start_stop_window.button_window, 
+                           pos=[0, 5*viewport_height/6],
+                           width=viewport_width/2,
+                           height=viewport_height/6)
+
+        dpg.configure_item(self.start_stop_window.start_button,
+                           pos=[0,0],
+                           width=viewport_width/4,
+                           height=viewport_height/6)
+        dpg.configure_item(self.start_stop_window.stop_button,
+                           pos=[viewport_width/4,0],
+                           width=viewport_width/4,
+                           height=viewport_height/6)
+
     def extra_config(self, state: SponState, instruments: SponInstruments):
         dpg.configure_item(
             self.instrument_control_window.linkam_initialise,
