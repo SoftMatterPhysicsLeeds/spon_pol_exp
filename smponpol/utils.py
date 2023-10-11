@@ -88,7 +88,7 @@ def update_measurement(state: SponState, frontend: SMPonpolUI, instruments: Spon
     if state.measurement_status == "Setting temperature" and (state.linkam_action == "Stopped" or state.linkam_action == "Holding"):
         instruments.linkam.set_temperature(
             state.temperature_list[state.temperature_step], 10
-        )
+            )
         state.measurement_status = f"Going to T: {state.temperature_list[state.temperature_step]}"
 
     elif (
@@ -110,6 +110,36 @@ def update_measurement(state: SponState, frontend: SMPonpolUI, instruments: Spon
         state.measurement_status = "Collecting Data"
         setup_and_run_measurement()
 
+    elif state.measurement_status == "Measurement Done":
+        setup_next_measurement()
+
+
+def setup_next_measurement(state: SponState, frontend: SMPonpolUI, instruments: SponInstruments):
+    if (state.temperature_step == len(state.temperature_list) - 1 and
+        state.voltage_step == len(state.voltage_list) - 1 and
+            state.frequency_step == len(state.freq_list) - 1):
+        state.measurement_status == "Finished"
+
+    else:
+        if (
+            state.voltage_step == len(state.voltage_list) - 1 and
+            state.frequency_step == len(state.freq_list) - 1
+        ):
+            state.temperature_step += 1
+            state.frequency_step = 0
+            state.voltage_step = 0
+
+            state.measurement_status = "Setting temperature"
+
+        elif state.voltage_step == len(state.voltage_list) - 1:
+            state.frequency_step += 1
+            state.voltage_step = 0
+            state.measurement_status = "Temperature Stabilised"
+
+        else:
+            state.voltage_step += 1
+            state.measurement_status = "Temperature Stabilised"
+
 
 def setup_and_run_measurement(state: SponState, frontend: SMPonpolUI, instruments: SponInstruments):
     thread = threading.Thread(
@@ -129,6 +159,7 @@ def run_measurement(state: SponState, frontend: SMPonpolUI, instruments: SponIns
     times, channel2_data = instruments.rigol.get_channel_trace(2)
 
     export_data_file(times, channel1_data, channel2_data)
+    state.measurement_status = "Measurement Done"
 
 
 def export_data_file(state: SponState, times, channel1, channel2):
