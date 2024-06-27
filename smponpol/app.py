@@ -7,9 +7,9 @@ import threading
 
 
 def main():
-    font_path = Path("./assets/IosevkaNerdFont-Regular.ttf")
     dpg.create_context()
 
+    font_path = Path("./assets/IosevkaNerdFont-Regular.ttf")
     with dpg.font_registry():
         default_font = dpg.add_font(
             font_path, 18)
