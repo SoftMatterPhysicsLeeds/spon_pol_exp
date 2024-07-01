@@ -122,6 +122,22 @@ class Rigol4204:
         self.scope.write(":TIM:HREF:MODE CENT")
         self.scope.write(":TRIG:NREJ ON")
 
+    def init_scope_defaults(self):
+        self.set_memory_depth()
+        self.set_acquisition_type()
+        self.set_number_of_averages()
+        self.set_offset()
+        self.set_scale()
+        self.set_mode()
+        self.set_coupling_mode()
+        self.set_holdoff_time()
+        self.set_trigger_type()
+        self.set_trigger_slope()
+        self.set_trigger_level()
+        self.set_trigger_channel()
+        self.set_trigger_mode()
+
+
     # Memory Depth options: 1k, 10k, 100k, 1M, 10M, 25M, 50M, 100M, 125M
     def set_memory_depth(self, depth=10000):
         self.scope.write(f"ACQ:MDEP {depth}")
@@ -191,7 +207,7 @@ class Rigol4204:
         self.scope.write(f"CHAN{channel}:SCAL {v_range}")
 
     def get_channel_trace(self, channel=1):
-        self.scope.write(":STOP")
+        # self.scope.write(":STOP")
         # if channel display is 'off', then don't do anything and just return.
         if int(self.scope.query(":CHAN{channel}:DISP?").strip()) == 0:
             return
@@ -203,7 +219,8 @@ class Rigol4204:
         y_reference = float(self.scope.query("WAV:YREF?"))
         start_time = float(self.scope.query("WAV:XOR?"))
 
-        data = self.scope.query(":WAV:DATA?")
+        self.scope.query(":WAV:DATA?")
+        data = self.scope.read()
         if self.scope.query("WAV:MODE?").strip() == "NORM":
             y_reference = y_reference * y_increment
         data = [(float(x) - y_reference) *
