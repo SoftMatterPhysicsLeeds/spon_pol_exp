@@ -1,6 +1,14 @@
-import threading
+from typing import Any
 import pyvisa
+import threading
 
+def write_handler(instrument, command_string):
+    try:
+        instrument.write(command_string)
+        return None
+    except Exception as e:
+        print(f"Could not write {command_string} to {instrument}: ",e) 
+        return e
 
 class LinkamHotstage:
     def __init__(self, address: str) -> None:
@@ -50,9 +58,10 @@ class LinkamHotstage:
                 self.init = True
 
     def stop(self) -> None:
-        self.link.write("E")  # type: ignore
-        self.link.read()  # type: ignore
-        self.init = False
+        with self.lock:
+            self.link.write("E")  # type: ignore
+            self.link.read()  # type: ignore
+            self.init = False
 
     def current_temperature(self) -> tuple[float, str]:
         with self.lock:
@@ -83,155 +92,97 @@ class LinkamHotstage:
         self.link.close()
 
 
-class Agilent33220A:
-    def __init__(self, address):
+class AgilentSpectrometer:
+    def __init__(self, address: str) -> None:
+        self.address = address
+        self.initialise(self.address)
+
+    def initialise(self, address: str) -> None:
         rm = pyvisa.ResourceManager()
-        self.wfg = rm.open_resource(address)
+        self.spectrometer = rm.open_resource(
+            address
+        )  # if no USB attached, this just connects to whatever first instrument is...
+        # self.spectrometer = rm.open_resource(rm.list_resources()[0])
+        self.spectrometer.read_termination = "\n"  # type: ignore
+        self.spectrometer.write_termination = "\n"  # type: ignore
+        # set timeout to long enough that the machine doesn't loose
+        # connection during measurement.
+        self.spectrometer.timeout = None
+        # self.spectrometer.query("*IDN?")
+        try:
+            write_handler(self.spectrometer, "*IDN?")
+            self.spectrometer_id = self.spectrometer.read()  # type: ignore
+            print(self.spectrometer_id)
+            self.reset_and_clear()
 
-    def set_waveform(self, waveform="SIN"):
-        self.wfg.write(f"FUNC {waveform}")
+        except pyvisa.errors.VisaIOError:
+            print("Could not connect to E4980A. Check address is correct.")
 
-    def set_frequency(self, frequency=1000.0):
-        self.wfg.write(f"FREQ {frequency}")
+    def reset_and_clear(self) -> None:
+        err = write_handler(self.spectrometer,"*RST; *CLS")  # type:ignore # reset and clear buffer
+        err = write_handler(self.spectrometer,":DISP:ENAB")  # type:ignore # enable display and update
+        err = write_handler(self.spectrometer,  # type: ignore
+            ":INIT:CONT"
+        )  # type: ignore # automatically perform continuous measurements
+        err = write_handler(self.spectrometer,":TRIG:SOUR EXT")  # type: ignore
+        self.set_voltage(0)
+        return err
 
-    def set_voltage(self, voltage=1.0):
-        self.wfg.write(f"VOLT {voltage}")
+    def set_frequency(self, freq: float) -> None:
+        err = write_handler(self.spectrometer, f":FREQ {freq}")
+        return err
 
-    def set_voltage_unit(self, voltage_unit="VPP"):
-        # options VPP | VRMS | DBM
-        self.wfg.write(f"VOLT:UNIT {voltage_unit}")
+    def set_freq_list(self, freq_list: Any) -> None:
+        err = write_handler(self.spectrometer,":DISP:PAGE LIST")  # type: ignore
+        err = write_handler(self.spectrometer,":LIST:MODE SEQ")  # type: ignore
 
-    def set_dc_offset(self, offset=0):
-        self.wfg.write(f"VOLT:OFFS {offset}")
+        freq_str = str(freq_list)
+        freq_str = freq_str.split("[")[1].split("]")[0]
 
-    def set_output(self, output="OFF"):
-        self.wfg.write(f"OUTP {output}")
+        err = write_handler(self.spectrometer,":LIST:FREQ ", freq_str)  # type: ignore
+        return err
 
-    def set_output_load(self, output="INF"):
-        self.wfg.write(f"OUTP:LOAD {output}")
+    def set_volt_list(self, volt_list: Any) -> None:
+        err = write_handler(self.spectrometer,":DISP:PAGE LIST")  # type: ignore
+        err = write_handler(self.spectrometer,":LIST:MODE SEQ")  # type: ignore
+
+        volt_str = str(volt_list)
+        volt_str = volt_str.split("[")[1].split("]")[0]
+
+        err = write_handler(self.spectrometer,":LIST:VOLT ", volt_str)  # type: ignore
+        return err
+
+    def set_voltage(self, volt: float) -> None:
+        err = write_handler(self.spectrometer,f":VOLT {volt}")  # type: ignore
+        return err
+
+    def set_func(self, func: str, auto: bool = True) -> None:
+        err= write_handler(self.spectrometer,f":FUNC:IMP {func}")  # type: ignore
+        if auto:
+            err = write_handler(self.spectrometer,":FUNC:IMP:RANG:AUTO ON")  # type: ignore
+        return err
+
+    def set_aperture_mode(self, mode: str, av_factor: int) -> None:
+        err= write_handler(self.spectrometer,f":APER {mode},{av_factor}")  # type: ignore
+        return err
+
+    def measure(self, func: str) -> list[float]:
+        # write_handler(self.spectrometer,":INIT")
+        err = write_handler(self.spectrometer,f":FUNC:IMP {func}")  # type: ignore
+        err = write_handler(self.spectrometer,":TRIG:IMM")  # type: ignore
+        err = write_handler(self.spectrometer,":FETC?")  # type: ignore # request data acquisition
+        # get data as [val1, val2, data_status].
+        # For CP-D func, this is [Cp, D, data_status]
+        return self.spectrometer.read_ascii_values(), err  # type: ignore
+
+    def set_DC_bias(self, voltage: float) -> None:
+        err = write_handler(self.spectrometer,f":BIAS:VOLT {voltage}")  # type: ignore
+        err = write_handler(self.spectrometer,":BIAS:STATE ON")  # type: ignore
+        return err
+
+    def turn_off_DC_bias(self) -> None:
+        err = write_handler(self.spectrometer,":BIAS:STATE OFF")  # type: ignore
+        return err
 
     def close(self):
-        self.wfg.close()
-
-
-class Rigol4204:
-    def __init__(self, address):
-        rm = pyvisa.ResourceManager()
-        self.scope = rm.open_resource(address)
-        self.scope.timeout = 100000.0
-        self.scope.write(":TIM:HREF:MODE CENT")
-        self.scope.write(":TRIG:NREJ ON")
-
-    def init_scope_defaults(self):
-        self.set_memory_depth()
-        self.set_acquisition_type()
-        self.set_number_of_averages()
-        self.set_offset()
-        self.set_scale()
-        self.set_mode()
-        self.set_coupling_mode()
-        self.set_holdoff_time()
-        self.set_trigger_type()
-        self.set_trigger_slope()
-        self.set_trigger_level()
-        self.set_trigger_channel()
-        self.set_trigger_mode()
-
-
-    # Memory Depth options: 1k, 10k, 100k, 1M, 10M, 25M, 50M, 100M, 125M
-    def set_memory_depth(self, depth=10000):
-        self.scope.write(f"ACQ:MDEP {depth}")
-
-    # acqusition types: NORM, AVER, PEAK, HRES
-    def set_acquisition_type(self, acq_type="AVER"):
-        self.scope.write(f":ACQ:TYPE {acq_type}")
-
-    def set_number_of_averages(self, averages=64):
-        self.scope.write(f":ACQ:AVER {averages}")
-
-    def set_offset(self, offset=0.0):
-        self.scope.write(f":TIM:OFFS {offset}")
-
-    def set_scale(self, scale=0.01):
-        self.scope.write(f":TIM:SCAL {scale}")
-
-    # Mode options: Main, XY, Roll
-    def set_mode(self, mode="MAIN"):
-        self.scope.write(f":TIM:MODE {mode}")
-
-    # coupling mode options: AC, DC, LFR, HFR
-    def set_coupling_mode(self, mode="AC"):
-        self.scope.write(f":TRIG:COUP {mode}")
-
-    def set_holdoff_time(self, holdoff_time=1e-7):
-        self.scope.write(f":TRIG:HOLD {holdoff_time}")
-
-    # trigger type options: EDGE, PULS, RUNT, WIND, NEDG, SLOP, VID, PATT, DEL, TIM, DURAT, SHOL, RS232, IIC, SPI, USB, flexray, CAN
-    def set_trigger_type(self, trigger_type="EDGE"):
-        self.scope.write(f":TRIG:MODE {trigger_type}")
-
-    # trigger slope options: POS, NEG, RFAL
-    def set_trigger_slope(self, trigger_slope="POS"):
-        self.scope.write(f":TRIG:EDGE:SLOP {trigger_slope}")
-
-    def set_trigger_level(self, trigger_level=0.0):
-        self.scope.write(f":TRIG:EDGE:LEV {trigger_level}")
-
-    def set_trigger_channel(self, channel=1):
-        self.scope.write(f":TRIG:EDGE:SOUR CHAN{channel}")
-
-    # trigger modes: AUTO, NORM, SING
-    def set_trigger_mode(self, mode="AUTO"):
-        self.scope.write(f":TRIG:SWE {mode}")
-
-    # channel set up
-
-    def initialise_channel(self, channel=1, mode="AC", attenuation=1, offset=0.0, v_range=0.0):
-        self.set_channel_coupling_mode(channel, mode)
-        self.set_channel_probe_attenuation(channel, attenuation)
-        self.set_channel_vertical_offset(channel, offset)
-        self.set_channel_vertical_range(channel, v_range)
-        self.scope.write(f"CHAN{channel}:BWL ON")
-        self.scope.write(f"CHAN{channel}:DISP ON")
-
-    def set_channel_coupling_mode(self, channel=1, mode="AC"):
-        self.scope.write(f":CHAN{channel}:COUP {mode}")
-
-    def set_channel_probe_attenuation(self, channel=1, attenuation=1):
-        self.scope.write(f":CHAN{channel}:PROB {attenuation}")
-
-    def set_channel_vertical_offset(self, channel=1, offset=0.0):
-        self.scope.write(f"CHAN{channel}:OFFS {offset}")
-
-    def set_channel_vertical_range(self, channel=1, v_range=0.0):
-        self.scope.write(f"CHAN{channel}:SCAL {v_range}")
-
-    def get_channel_trace(self, channel=1):
-        # self.scope.write(":STOP")
-        # if channel display is 'off', then don't do anything and just return.
-        if int(self.scope.query(":CHAN{channel}:DISP?").strip()) == 0:
-            return
-
-        self.scope.write(f":WAV:SOUR CHAN{channel}")
-        self.scope.write(":WAV:FORM ASC;:WAV:MODE MAX")
-        x_increment = float(self.scope.query("WAV:XINC?"))
-        y_increment = float(self.scope.query("WAV:YINC?"))
-        y_reference = float(self.scope.query("WAV:YREF?"))
-        start_time = float(self.scope.query("WAV:XOR?"))
-
-        self.scope.query(":WAV:DATA?")
-        data = self.scope.read()
-        if self.scope.query("WAV:MODE?").strip() == "NORM":
-            y_reference = y_reference * y_increment
-        data = [(float(x) - y_reference) *
-                y_increment for x in data.strip().split(',')]
-        times = [start_time+(x_increment * x) for x in range(len(data))]
-
-        return times, data
-
-    def close(self):
-        self.scope.close()
-
-# operation order for RIGOL (from "Main_program_v1_18_RIGOL.vi"):
-# Connect
-# set memory depth, offset, scale and mode
+        self.spectrometer.close()
