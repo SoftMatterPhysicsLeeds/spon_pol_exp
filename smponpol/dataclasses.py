@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from smponpol.instruments import LinkamHotstage, AgilentSpectrometer
+from smponpol.instruments import LinkamHotstage, Agilent33220A
 from enum import Enum
 from pyvisa.resources import Resource
 
@@ -70,5 +70,5 @@ class lcd_state:
 @dataclass
 class lcd_instruments:
     linkam: LinkamHotstage | None = None
-    agilent: AgilentSpectrometer | None = None
+    agilent: Agilent33220A | None = None
     oscilloscope: Resource | None = None

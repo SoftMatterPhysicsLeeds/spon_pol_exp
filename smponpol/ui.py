@@ -43,16 +43,16 @@ class lcd_ui:
     def draw_children(self, width, height):
 
         dpg.configure_item(
-            self.results_graph, pos=[width / 2, 0], width=width / 2, height=height / 2
+            self.results_graph, pos=[0, height/2], width=width, height=height / 2
         )
-        dpg.configure_item(
-            self.temperature_log_graph,
-            pos=[width / 2, height / 2],
-            width=width / 2,
-            height=height / 2,
-        )
+        # dpg.configure_item(
+        #     self.temperature_log_graph,
+        #     pos=[width / 2, height / 2],
+        #     width=width / 2,
+        #     height=height / 2,
+        # )
 
-        height_mod = height
+        height_mod = height/2
         dpg.configure_item(
             self.control_window,
             pos=[0, 0],
@@ -71,12 +71,12 @@ class lcd_ui:
             pos=[0, 0.37 * height_mod],
             height=0.25 * height_mod,
         )
-        dpg.configure_item(
-            self.voltage_list_window,
-            width=width / 4,
-            pos=[width / 4, 0.37 * height_mod],
-            height=0.25 * height_mod,
-        )
+        # dpg.configure_item(
+        #     self.voltage_list_window,
+        #     width=width / 4,
+        #     pos=[width / 4, 0.37 * height_mod],
+        #     height=0.25 * height_mod,
+        # )
         dpg.configure_item(
             self.temperature_list_window,
             width=width / 2,
@@ -99,11 +99,11 @@ class lcd_ui:
         )
         dpg.configure_item(self.results_plot_window, height=-1, width=-1)
 
-        dpg.configure_item(
-            self.temperature_log_plot_window,
-            height=-1,
-            width=-1,
-        )
+        # dpg.configure_item(
+        #     self.temperature_log_plot_window,
+        #     height=-1,
+        #     width=-1,
+        # )
 
     def _make_graph_windows(self):
         with dpg.window(
@@ -127,26 +127,26 @@ class lcd_ui:
                 self.results_plot = dpg.add_scatter_series(
                     x=[], y=[], label="Temp", parent="Cp_axis", tag="results_plot"
                 )
-        with dpg.window(
-            label="Temperature Log",
-            no_collapse=True,
-            no_close=True,
-            no_resize=True
-        ) as self.temperature_log_graph:
-            with dpg.plot(
-                anti_aliased=True,
-            ) as self.temperature_log_plot_window:
-                self.temperature_log_time_axis = dpg.add_plot_axis(
-                    dpg.mvXAxis, label="time (s)", tag="time_axis"
-                )
-                self.temperature_log_T_axis = dpg.add_plot_axis(
-                    dpg.mvYAxis, label="T (°C)", tag="T_axis"
-                )
-                # series belong to a y axis. Note the tag name is used in the update
-                # function update_data
-                self.temperature_log = dpg.add_line_series(
-                    x=[], y=[], label="Temp", parent="T_axis", tag="temperature_log"
-                )
+        # with dpg.window(
+        #     label="Temperature Log",
+        #     no_collapse=True,
+        #     no_close=True,
+        #     no_resize=True
+        # ) as self.temperature_log_graph:
+        #     with dpg.plot(
+        #         anti_aliased=True,
+        #     ) as self.temperature_log_plot_window:
+        #         self.temperature_log_time_axis = dpg.add_plot_axis(
+        #             dpg.mvXAxis, label="time (s)", tag="time_axis"
+        #         )
+        #         self.temperature_log_T_axis = dpg.add_plot_axis(
+        #             dpg.mvYAxis, label="T (°C)", tag="T_axis"
+        #         )
+        #         # series belong to a y axis. Note the tag name is used in the update
+        #         # function update_data
+        #         self.temperature_log = dpg.add_line_series(
+        #             x=[], y=[], label="Temp", parent="T_axis", tag="temperature_log"
+        #         )
 
     def _make_control_window(self):
         with dpg.window(
@@ -209,30 +209,28 @@ class lcd_ui:
                 no_close=True,
                 no_resize=True
             ) as self.measurement_settings_window:
+                
+                # we want: 
+                # memory depth, 
+                # acquisition type, - set this to always averages to start with? 
+                # number of averages
+                # waveform function (probably always triangle)
+                # 
+
                 with dpg.table(header_row=False):
                     dpg.add_table_column()
                     dpg.add_table_column()
-                    dpg.add_table_column()
-                    dpg.add_table_column()
+                    
 
                     with dpg.table_row():
-                        dpg.add_text("Delay time (s): ")
-                        self.delay_time = dpg.add_input_double(
-                            default_value=0.5, width=-1, step=0, step_fast=0, tag="delay_time"
-                        )
-                        dpg.add_text("Meas. Time Mode: ")
+                        dpg.add_text("Memory Depth: ")
                         self.meas_time_mode_selector = dpg.add_combo(
-                            ["SHOR", "MED", "LONG"], width=-1, default_value="SHOR", tag = "meas_time_mode"
+                            ["1k", "10k", "100k", "1M", "10M", "25M", "50M", "100M", "125M"], width=-1, default_value="10k", tag = "memory_depth"
                         )
-
                     with dpg.table_row():
-                        dpg.add_text("Averaging Factor: ")
-                        self.averaging_factor = dpg.add_input_int(
-                            default_value=1, width=-1, step=0, step_fast=0, tag = "averaging_factor"
-                        )
-                        dpg.add_text("Bias Level (V)")
-                        self.bias_level = dpg.add_combo(
-                            [0, 1.5, 2], width=-1, default_value=0, tag = "bias_level"
+                        dpg.add_text("Number of averages: ")
+                        self.delay_time = dpg.add_combo([2, 4, 8, 16, 32,64, 128, 256, 512, 1024, 2048, 4096],
+                            default_value=64, width=-1, tag="number_of_averages"
                         )
 
                 with dpg.group(horizontal=True):
@@ -276,13 +274,13 @@ class lcd_ui:
                     *make_variable_list_frame(20.0, 20.0, 2e5)
                 )
 
-            with dpg.window(
-                label="Voltage List",
-                no_collapse=True,
-                no_close=True,
-                no_resize=True
-            ) as self.voltage_list_window:
-                self.volt_list = variable_list(*make_variable_list_frame(1.0, 0.01, 20))
+            # with dpg.window(
+            #     label="Voltage List",
+            #     no_collapse=True,
+            #     no_close=True,
+            #     no_resize=True
+            # ) as self.voltage_list_window:
+            #     self.volt_list = variable_list(*make_variable_list_frame(1.0, 0.01, 20))
 
             with dpg.window(
                 label="Temperature List",

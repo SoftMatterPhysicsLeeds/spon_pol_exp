@@ -2,7 +2,7 @@ import dearpygui.dearpygui as dpg
 from smponpol.ui import lcd_ui
 from smponpol.excel_writer import make_excel
 from smponpol.dataclasses import lcd_instruments, lcd_state, Status, OutputType
-from smponpol.instruments import AgilentSpectrometer, LinkamHotstage
+from smponpol.instruments import Agilent33220A, LinkamHotstage
 import json
 import pyvisa
 import time
@@ -106,7 +106,7 @@ def init_agilent(
 ) -> None:
     if instruments.agilent:
         instruments.agilent.close()
-    agilent = AgilentSpectrometer(dpg.get_value(frontend.agilent_com_selector))
+    agilent = Agilent33220A(dpg.get_value(frontend.agilent_com_selector))
     dpg.set_value(frontend.agilent_status, "Connected")
     dpg.configure_item(frontend.agilent_initialise, label = "Reconnect")
     instruments.agilent = agilent
