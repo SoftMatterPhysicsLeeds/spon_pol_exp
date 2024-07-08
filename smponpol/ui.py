@@ -57,20 +57,20 @@ class lcd_ui:
             self.control_window,
             pos=[0, 0],
             width=width / 2,
-            height=0.17 * height_mod,
+            height=height/2,
         )
         dpg.configure_item(
             self.measurement_settings_window,
-            pos=[0, 0.17 * height_mod],
+            pos=[width/2, 0],
             width=width / 2,
-            height=0.20 * height_mod,
+            height= 1/3 * height_mod,
         )
-        dpg.configure_item(
-            self.frequency_list_window,
-            width=width / 4,
-            pos=[0, 0.37 * height_mod],
-            height=0.25 * height_mod,
-        )
+        # dpg.configure_item(
+        #     self.frequency_list_window,
+        #     width=width / 4,
+        #     pos=[0, 1/3 * height_mod],
+        #     height=1/3  * height_mod,
+        # )
         # dpg.configure_item(
         #     self.voltage_list_window,
         #     width=width / 4,
@@ -80,15 +80,15 @@ class lcd_ui:
         dpg.configure_item(
             self.temperature_list_window,
             width=width / 2,
-            height=0.25 * height_mod,
-            pos=[0, 0.62 * height_mod],
+            height=1/3 * height_mod,
+            pos=[width/2, 1/3 * height_mod],
         )
 
         dpg.configure_item(
             self.start_stop_button_window,
-            pos=[0, 0.87 * height_mod],
+            pos=[width/2, 2/3 * height_mod],
             width=width / 2,
-            height=0.13 * height_mod,
+            height=1/3 * height_mod,
         )
 
         dpg.configure_item(
@@ -264,15 +264,15 @@ class lcd_ui:
                             callback=self.load_measurement_settings,
                         )
 
-            with dpg.window(
-                label="Frequency List",
-                no_collapse=True,
-                no_close=True,
-                no_resize=True
-            ) as self.frequency_list_window:
-                self.freq_list = variable_list(
-                    *make_variable_list_frame(20.0, 20.0, 2e5)
-                )
+            # with dpg.window(
+            #     label="Frequency List",
+            #     no_collapse=True,
+            #     no_close=True,
+            #     no_resize=True
+            # ) as self.frequency_list_window:
+            #     self.freq_list = variable_list(
+            #         *make_variable_list_frame(20.0, 20.0, 2e5)
+            #     )
 
             # with dpg.window(
             #     label="Voltage List",

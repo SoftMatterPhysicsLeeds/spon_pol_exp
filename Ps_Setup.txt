@@ -1,0 +1,25 @@
+Connected to PC:
+	Signal Generator
+	Oscilliscope
+	Hotstage
+	
+General Experiment:
+	Record current traces of off channel 1 and 2 from the oscilliscope for some input signal to signal generator at some temperature.
+	It would be nice (but not necesary) if you had the option to do it both with and without the hotstage much like it is for dielectric setup 
+	
+Signal Generator:
+	Apply a traingle wave of some frequency at some voltage. 
+	There are settings such as Vpp or Vrms, wave "symmetry" and also something called "hi-load" Generally I want Vrms, 50% symmetry and hi load on(?) (not sure about that last one)
+	I mostly only use Rigol I guess the others could be added in but this is bonus.
+
+Oscilliscope.
+	Need to input the range to be captured and averaging. Timebase and offset, vertical voltage and offset.
+	
+Hotstage.
+	All the options you have for the dielctrics are perfect. 
+	Input a series of temepratures either specific or a range or both, cooling/heating rate options and "hold" temperature before measurement. A "go to" is also nice.
+	Linkam is fine but Instec would be nice too but if thats a pain you could leave it for me perhaps. 
+	
+	
+	
+	
