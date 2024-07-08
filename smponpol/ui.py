@@ -19,7 +19,7 @@ HEIGHT_DISCREPANCY = int(VIEWPORT_HEIGHT / VERTICAL_WIDGET_NUMBER)
 class lcd_ui:
     def __init__(self):
         self.status = "Idle"
-        self.linkam_status = "Not Connected"
+        self.hotstage_status = "Not Connected"
         self.agilent_status = "Not Connected"
         self.oscilloscope_status = "Not Connected"
         self._make_control_window()
@@ -41,76 +41,46 @@ class lcd_ui:
         dpg.bind_item_theme(self.stop_button, STOP_THEME)
 
     def draw_children(self, width, height):
-
         dpg.configure_item(
-            self.results_graph, pos=[0, height/2], width=width, height=height / 2
+            self.results_graph, pos=[0, height / 2], width=width, height=height / 2
         )
-        # dpg.configure_item(
-        #     self.temperature_log_graph,
-        #     pos=[width / 2, height / 2],
-        #     width=width / 2,
-        #     height=height / 2,
-        # )
 
-        height_mod = height/2
+        height_mod = height / 2 - (height/2)/4
         dpg.configure_item(
             self.control_window,
             pos=[0, 0],
             width=width / 2,
-            height=height/2,
+            height=height / 2,
         )
         dpg.configure_item(
             self.measurement_settings_window,
-            pos=[width/2, 0],
+            pos=[width / 2, 0],
             width=width / 2,
-            height= 1/3 * height_mod,
+            height=0.5 * height_mod,
         )
-        # dpg.configure_item(
-        #     self.frequency_list_window,
-        #     width=width / 4,
-        #     pos=[0, 1/3 * height_mod],
-        #     height=1/3  * height_mod,
-        # )
-        # dpg.configure_item(
-        #     self.voltage_list_window,
-        #     width=width / 4,
-        #     pos=[width / 4, 0.37 * height_mod],
-        #     height=0.25 * height_mod,
-        # )
+        
         dpg.configure_item(
             self.temperature_list_window,
             width=width / 2,
-            height=1/3 * height_mod,
-            pos=[width/2, 1/3 * height_mod],
+            height=0.5 * height_mod,
+            pos=[width / 2, 0.5 * height_mod],
         )
 
         dpg.configure_item(
             self.start_stop_button_window,
-            pos=[width/2, 2/3 * height_mod],
+            pos=[width / 2, height_mod],
             width=width / 2,
-            height=1/3 * height_mod,
+            height=(height/2)/4,
         )
 
-        dpg.configure_item(
-            self.start_button, width=width / 4 - 10, height=-1
-        )
-        dpg.configure_item(
-            self.stop_button, width=width / 4 - 10, height=-1
-        )
+        dpg.configure_item(self.start_button, width=width / 4 - 10, height=-1)
+        dpg.configure_item(self.stop_button, width=width / 4 - 10, height=-1)
         dpg.configure_item(self.results_plot_window, height=-1, width=-1)
 
-        # dpg.configure_item(
-        #     self.temperature_log_plot_window,
-        #     height=-1,
-        #     width=-1,
-        # )
-
+     
     def _make_graph_windows(self):
         with dpg.window(
-            label="Results",
-            no_collapse=True,
-            no_close=True,
-            no_resize=True
+            label="Results", no_collapse=True, no_close=True, no_resize=True, no_title_bar=True
         ) as self.results_graph:
             with dpg.plot(
                 anti_aliased=True,
@@ -127,32 +97,15 @@ class lcd_ui:
                 self.results_plot = dpg.add_scatter_series(
                     x=[], y=[], label="Temp", parent="Cp_axis", tag="results_plot"
                 )
-        # with dpg.window(
-        #     label="Temperature Log",
-        #     no_collapse=True,
-        #     no_close=True,
-        #     no_resize=True
-        # ) as self.temperature_log_graph:
-        #     with dpg.plot(
-        #         anti_aliased=True,
-        #     ) as self.temperature_log_plot_window:
-        #         self.temperature_log_time_axis = dpg.add_plot_axis(
-        #             dpg.mvXAxis, label="time (s)", tag="time_axis"
-        #         )
-        #         self.temperature_log_T_axis = dpg.add_plot_axis(
-        #             dpg.mvYAxis, label="T (°C)", tag="T_axis"
-        #         )
-        #         # series belong to a y axis. Note the tag name is used in the update
-        #         # function update_data
-        #         self.temperature_log = dpg.add_line_series(
-        #             x=[], y=[], label="Temp", parent="T_axis", tag="temperature_log"
-        #         )
-
+        
     def _make_control_window(self):
         with dpg.window(
-            label="Status", no_collapse=True, no_close=True, no_title_bar=True, no_resize=True
+            label="Status",
+            no_collapse=True,
+            no_close=True,
+            no_title_bar=True,
+            no_resize=True,
         ) as self.control_window:
-
             with dpg.group(tag="status_window"):
                 with dpg.group(horizontal=True):
                     self.status_label = dpg.add_text("Status: ")
@@ -166,9 +119,9 @@ class lcd_ui:
                 dpg.add_table_column()
 
                 with dpg.table_row():
-                    dpg.add_text("Linkam: ")
-                    self.linkam_status = dpg.add_text(
-                        f"{self.linkam_status}", tag="linkam_status_display"
+                    dpg.add_text("Instec: ")
+                    self.hotstage_status = dpg.add_text(
+                        f"{self.hotstage_status}", tag="hotstage_status_display"
                     )
 
                     self.linkam_com_selector = dpg.add_combo(width=-1)
@@ -179,16 +132,16 @@ class lcd_ui:
                 with dpg.table_row():
                     dpg.add_text("Agilent: ")
                     self.agilent_status = dpg.add_text(
-                        f"{self.agilent_status}", tag="agilent_status_display"
+                        f"{self.agilent_status}", tag="waveformgenerator_status_display"
                     )
 
                     self.agilent_com_selector = dpg.add_combo(width=-1)
                     self.agilent_initialise = dpg.add_button(
                         label="Initialise", width=-1
                     )
-                    
+
                 with dpg.table_row():
-                    dpg.add_text("Oscilloscope: ")
+                    dpg.add_text("Rigol: ")
                     self.oscilloscope_status = dpg.add_text(
                         f"{self.oscilloscope_status}", tag="oscilloscope_status_display"
                     )
@@ -197,40 +150,65 @@ class lcd_ui:
                     self.oscilloscope_initialise = dpg.add_button(
                         label="Initialise", width=-1
                     )
-                    
+
                 with dpg.table_row():
                     self.num_averages_text = dpg.add_text("N: ", show=False)
-                    self.num_averages = dpg.add_input_int(default_value=5, width=-1, step =0, step_fast=0, show=False)
+                    self.num_averages = dpg.add_input_int(
+                        default_value=5, width=-1, step=0, step_fast=0, show=False
+                    )
 
-               
+            with dpg.table(header_row=False):
+                dpg.add_table_column()
+                dpg.add_table_column()
+                with dpg.table_row():
+                    dpg.add_text("Current Temperature:")
+                    self.current_temperature_display = dpg.add_text(f"{25.0}")
+                with dpg.table_row():
+                    dpg.add_text("Next Temperature:")
+                    self.next_temperature_display = dpg.add_text(f"{25.0}")
             with dpg.window(
                 label="Measurement Settings",
                 no_collapse=True,
                 no_close=True,
-                no_resize=True
+                no_resize=True,
+                no_title_bar=True,
             ) as self.measurement_settings_window:
-                
-                # we want: 
-                # memory depth, 
-                # acquisition type, - set this to always averages to start with? 
+                # we want:
+                # memory depth,
+                # acquisition type, - set this to always averages to start with?
                 # number of averages
                 # waveform function (probably always triangle)
-                # 
+                #
 
                 with dpg.table(header_row=False):
                     dpg.add_table_column()
                     dpg.add_table_column()
-                    
 
                     with dpg.table_row():
                         dpg.add_text("Memory Depth: ")
                         self.meas_time_mode_selector = dpg.add_combo(
-                            ["1k", "10k", "100k", "1M", "10M", "25M", "50M", "100M", "125M"], width=-1, default_value="10k", tag = "memory_depth"
+                            [
+                                "1k",
+                                "10k",
+                                "100k",
+                                "1M",
+                                "10M",
+                                "25M",
+                                "50M",
+                                "100M",
+                                "125M",
+                            ],
+                            width=-1,
+                            default_value="10k",
+                            tag="memory_depth",
                         )
                     with dpg.table_row():
                         dpg.add_text("Number of averages: ")
-                        self.delay_time = dpg.add_combo([2, 4, 8, 16, 32,64, 128, 256, 512, 1024, 2048, 4096],
-                            default_value=64, width=-1, tag="number_of_averages"
+                        self.delay_time = dpg.add_combo(
+                            [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096],
+                            default_value=64,
+                            width=-1,
+                            tag="number_of_averages",
                         )
 
                 with dpg.group(horizontal=True):
@@ -239,14 +217,17 @@ class lcd_ui:
                         dpg.add_table_column()
                         dpg.add_table_column()
                         with dpg.table_row():
-
                             self.output_file_path = dpg.add_input_text(
-                                default_value="results.json", width = -1, tag = "output_file_path"
+                                default_value="results.json",
+                                width=-1,
+                                tag="output_file_path",
                             )
                             self.browse_button = dpg.add_button(
                                 label="Browse",
-                                callback=lambda: self.open_tkinter_saveas_file_picker("output"),
-                                width=-1
+                                callback=lambda: self.open_tkinter_saveas_file_picker(
+                                    "output"
+                                ),
+                                width=-1,
                             )
 
                 with dpg.table(header_row=False):
@@ -264,29 +245,13 @@ class lcd_ui:
                             callback=self.load_measurement_settings,
                         )
 
-            # with dpg.window(
-            #     label="Frequency List",
-            #     no_collapse=True,
-            #     no_close=True,
-            #     no_resize=True
-            # ) as self.frequency_list_window:
-            #     self.freq_list = variable_list(
-            #         *make_variable_list_frame(20.0, 20.0, 2e5)
-            #     )
-
-            # with dpg.window(
-            #     label="Voltage List",
-            #     no_collapse=True,
-            #     no_close=True,
-            #     no_resize=True
-            # ) as self.voltage_list_window:
-            #     self.volt_list = variable_list(*make_variable_list_frame(1.0, 0.01, 20))
 
             with dpg.window(
                 label="Temperature List",
                 no_collapse=True,
                 no_close=True,
-                no_resize=True
+                no_resize=True,
+                no_title_bar=True
             ) as self.temperature_list_window:
                 with dpg.group(horizontal=True):
                     self.temperature_list = variable_list(
@@ -311,12 +276,11 @@ class lcd_ui:
                             with dpg.table_row():
                                 dpg.add_text("Stab. Time (s)")
                                 self.stab_time = dpg.add_input_double(
-                                    default_value=1, width=100, step=0, step_fast=0
+                                    default_value=30, width=100, step=0, step_fast=0
                                 )
 
             with dpg.window(
-                no_title_bar=True,
-                no_resize=True
+                no_title_bar=True, no_resize=True
             ) as self.start_stop_button_window:
                 with dpg.group(horizontal=True):
                     self.start_button = dpg.add_button(
@@ -353,12 +317,12 @@ class lcd_ui:
             self.averaging_factor: dpg.get_value(self.averaging_factor),
             self.bias_level: dpg.get_value(self.bias_level),
             self.output_file_path: dpg.get_value(self.output_file_path),
-            "freq_list": dpg.get_item_configuration(
-                self.freq_list.list_handle
-            )["items"],
-            "volt_list": dpg.get_item_configuration(
-                self.volt_list.list_handle
-            )["items"],
+            "freq_list": dpg.get_item_configuration(self.freq_list.list_handle)[
+                "items"
+            ],
+            "volt_list": dpg.get_item_configuration(self.volt_list.list_handle)[
+                "items"
+            ],
             "temperature_list": dpg.get_item_configuration(
                 self.temperature_list.list_handle
             )["items"],
@@ -382,7 +346,7 @@ class lcd_ui:
         for key in tmp.keys():
             if key == "freq_list":
                 dpg.configure_item(self.freq_list.list_handle, items=tmp[key])
-            elif key == "volt_list": 
+            elif key == "volt_list":
                 dpg.configure_item(self.volt_list.list_handle, items=tmp[key])
             elif key == "temperature_list":
                 dpg.configure_item(self.temperature_list.list_handle, items=tmp[key])
