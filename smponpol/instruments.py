@@ -99,7 +99,7 @@ class Agilent33220A:
         rm = pyvisa.ResourceManager()
         self.wfg = rm.open_resource(address)
 
-    def set_waveform(self, waveform="SIN"):
+    def set_waveform(self, waveform="TRI"):
         self.wfg.write(f"FUNC {waveform}")
 
     def set_frequency(self, frequency=1000.0):
@@ -108,7 +108,7 @@ class Agilent33220A:
     def set_voltage(self, voltage=1.0):
         self.wfg.write(f"VOLT {voltage}")
 
-    def set_voltage_unit(self, voltage_unit="VPP"):
+    def set_voltage_unit(self, voltage_unit="VRMS"):
         # options VPP | VRMS | DBM
         self.wfg.write(f"VOLT:UNIT {voltage_unit}")
 

@@ -2,7 +2,7 @@ import dearpygui.dearpygui as dpg
 from smponpol.ui import lcd_ui
 from smponpol.excel_writer import make_excel
 from smponpol.dataclasses import lcd_instruments, lcd_state, Status, OutputType
-from smponpol.instruments import Agilent33220A, LinkamHotstage
+from smponpol.instruments import Agilent33220A, Instec
 import json
 import pyvisa
 import time
@@ -30,14 +30,7 @@ def start_measurement(
                 dpg.mvThemeCol_Button, (100, 100, 100), category=dpg.mvThemeCat_Core
             )
     dpg.bind_item_theme(frontend.start_button, DEACTIVATED_THEME)
-    state.freq_list = [
-        float(x.split("\t")[-1])
-        for x in dpg.get_item_configuration(frontend.freq_list.list_handle)["items"]
-    ]
-    state.voltage_list = [
-        float(x.split("\t")[-1])
-        for x in dpg.get_item_configuration(frontend.volt_list.list_handle)["items"]
-    ]
+
     state.T_list = [
         float(x.split("\t")[-1])
         for x in dpg.get_item_configuration(frontend.temperature_list.list_handle)[
@@ -45,47 +38,26 @@ def start_measurement(
         ]
     ]
 
-    state.T_list = [round(x, 0) for x in state.T_list]
+    state.T_list = [round(x, 1) for x in state.T_list]
 
-    err = instruments.agilent.set_aperture_mode(
-        dpg.get_value(frontend.meas_time_mode_selector),
-        dpg.get_value(frontend.averaging_factor),
-    )
-    if err:
-        init_agilent(frontend, instruments, state)
-        err = instruments.agilent.set_aperture_mode(
-        dpg.get_value(frontend.meas_time_mode_selector),
-        dpg.get_value(frontend.averaging_factor),
-        )
+    instruments.agilent.set_waveform() # default is triangle
+    instruments.agilent.set_voltage_unit() # default is VRMS
+    instruments.agilent.set_output_load() # default is INF
+    instruments.agilent.set_voltage(dpg.get_value(frontend.voltage_input))
+    instruments.agilent.set_frequency(dpg.get_value(frontend.frequency_input))
 
-    bias = dpg.get_value(frontend.bias_level)
-    if bias == 1.5 or 2:
-        err = instruments.agilent.set_DC_bias(float(bias))
-        if err:
-            init_agilent(frontend, instruments, state)
-            err = instruments.agilent.set_DC_bias(float(bias))
+    instruments.agilent.set_output('ON')
 
     state.T_step = 0 
-    state.freq_step = 0
-    state.volt_step = 0 
-
-    T = state.T_list[state.T_step]
-    freq = state.freq_list[state.freq_step]
 
     T_str =f"{state.T_step + 1}: {state.T_list[state.T_step]}"
-    freq_str = f"{state.freq_step+1}: {freq}"
 
     state.resultsDict[T_str] = dict()
-    state.resultsDict[T_str][freq_str] = dict()
-    state.resultsDict[T_str][freq_str]["volt"] = []
-    state.resultsDict[T_str][freq_str]["Cp"] = []
-    state.resultsDict[T_str][freq_str]["D"] = []
-    state.resultsDict[T_str][freq_str]["G"] = []
-    state.resultsDict[T_str][freq_str]["B"] = []
-
-    if instruments.oscilloscope:
-        for i in range(dpg.get_value(frontend.num_averages)):
-            state.resultsDict[T_str][freq_str][f"Ave. Transmission #{i+1}"] = []
+    state.resultsDict[T_str]
+    state.resultsDict[T_str]["time"] = []
+    state.resultsDict[T_str]["channel1"] = []
+    state.resultsDict[T_str]["channel2"] = []
+    
 
     state.measurement_status = Status.SET_TEMPERATURE
     state.xdata = []
@@ -93,7 +65,7 @@ def start_measurement(
 
 
 def stop_measurement(instruments: lcd_instruments, state: lcd_state, frontend: lcd_ui) -> None:
-    instruments.linkam.stop()
+    instruments.hotstage.stop()
     err = instruments.agilent.reset_and_clear()
     if err:
         init_agilent(frontend, instruments, state)
@@ -130,27 +102,27 @@ def init_oscilloscope(
     write_handler(instruments.oscilloscope,":ACQuire:TYPE NORMal")
     write_handler(instruments.oscilloscope,":TIMebase:DELay 0")
 
-def init_linkam(
+def init_hotstage(
     frontend: lcd_ui, instruments: lcd_instruments, state: lcd_state
 ) -> None:
-    linkam = LinkamHotstage(dpg.get_value(frontend.linkam_com_selector))
+    hotstage = Instec(dpg.get_value(frontend.hotstage_com_selector))
     try:
-        linkam.current_temperature()
-        dpg.set_value(frontend.linkam_status, "Connected")
-        dpg.hide_item(frontend.linkam_initialise)
-        instruments.linkam = linkam
-        state.linkam_connection_status = "Connected"
+        hotstage.current_temperature()
+        dpg.set_value(frontend.hotstage_status, "Connected")
+        dpg.hide_item(frontend.hotstage_initialise)
+        instruments.hotstage = hotstage
+        state.hotstage_connection_status = "Connected"
         with open("address.dat", "w") as f:
-            f.write(dpg.get_value(frontend.linkam_com_selector))
+            f.write(dpg.get_value(frontend.hotstage_com_selector))
 
     except pyvisa.errors.VisaIOError:
-        dpg.set_value(frontend.linkam_status, "Couldn't connect")
+        dpg.set_value(frontend.hotstage_status, "Couldn't connect")
 
 
 def connect_to_instrument_callback(sender, app_data, user_data):
-    if user_data["instrument"] == "linkam":
+    if user_data["instrument"] == "hotstage":
         thread = threading.Thread(
-            target=init_linkam,
+            target=init_hotstage,
             args=(user_data["frontend"], user_data["instruments"], user_data["state"]),
         )
     elif user_data["instrument"] == "agilent":
@@ -184,9 +156,9 @@ def handle_measurement_status(
                 )
         dpg.bind_item_theme(frontend.start_button, START_THEME)
     elif state.measurement_status == Status.SET_TEMPERATURE and (
-        state.linkam_action == "Stopped" or state.linkam_action == "Holding"
+        state.hotstage_action == "Stopped" or state.hotstage_action == "Holding"
     ):
-        instruments.linkam.set_temperature(
+        instruments.hotstage.set_temperature(
             state.T_list[state.T_step], dpg.get_value(frontend.T_rate)
         )
         state.measurement_status = Status.GOING_TO_TEMPERATURE
@@ -194,8 +166,8 @@ def handle_measurement_status(
             frontend.measurement_status, f"Going to {state.T_list[state.T_step]} C"
         )
     elif state.measurement_status == Status.GOING_TO_TEMPERATURE and (
-        state.linkam_temperature > state.T_list[state.T_step] - 0.1
-        and state.linkam_temperature < state.T_list[state.T_step] + 0.1
+        state.hotstage_temperature > state.T_list[state.T_step] - 0.1
+        and state.hotstage_temperature < state.T_list[state.T_step] + 0.1
     ):
         state.t_stable_start = time.time()
         state.measurement_status = Status.STABILISING_TEMPERATURE
@@ -237,7 +209,7 @@ def handle_measurement_status(
             )
 
     elif state.measurement_status == Status.FINISHED:
-        instruments.linkam.stop()
+        instruments.hotstage.stop()
         
         err = instruments.agilent.reset_and_clear()
         if err:
@@ -248,16 +220,14 @@ def handle_measurement_status(
 
 
 def find_instruments(frontend: lcd_ui):
-    # com_selector = [x.__str__() for x  in list_ports.comports()]
-
     dpg.set_value(frontend.measurement_status, "Finding Instruments...")
     rm = pyvisa.ResourceManager()
-    visa_resources = rm.list_resources()
+    visa_resources = rm.list_resources('?*')
 
-    com_selector = [x for x in visa_resources if x.split("::")[0][0:4] == "ASRL"]
+    # com_selector = [x for x in visa_resources if x.split("::")[0][0:4] == "ASRL"]
     usb_selector = [x for x in visa_resources if x.split("::")[0][0:3] == "USB"]
 
-    dpg.configure_item(frontend.linkam_com_selector, items=com_selector)
+    dpg.configure_item(frontend.hotstage_com_selector, items=usb_selector)
     dpg.configure_item(frontend.agilent_com_selector, items=usb_selector)
     dpg.configure_item(frontend.oscilloscope_com_selector, items=usb_selector)
 
@@ -327,12 +297,11 @@ def read_temperature(frontend: lcd_ui, instruments: lcd_instruments, state: lcd_
     log_time = 0
     time_step = 0.05
     while True:
-        temperature, status = instruments.linkam.current_temperature()
-        if temperature == 0.0:
-            continue
-        state.linkam_temperature = temperature
+        temperature = instruments.hotstage.get_temperature()
+        
+        state.hotstage_temperature = temperature
         dpg.set_value(
-            frontend.linkam_status, f"T: {str(temperature)}, Status: {status}"
+            frontend.hotstage_status, f"T: {str(temperature)}"
         )
         state.T_log_time.append(log_time)
         state.T_log_T.append(temperature)
@@ -349,7 +318,7 @@ def read_temperature(frontend: lcd_ui, instruments: lcd_instruments, state: lcd_
         )
         dpg.fit_axis_data(frontend.temperature_log_time_axis)
 
-        state.linkam_action = status
+        # state.hotstage_action = status
         time.sleep(time_step)
         log_time += time_step
 

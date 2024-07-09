@@ -124,8 +124,8 @@ class lcd_ui:
                         f"{self.hotstage_status}", tag="hotstage_status_display"
                     )
 
-                    self.linkam_com_selector = dpg.add_combo(width=-1)
-                    self.linkam_initialise = dpg.add_button(
+                    self.hotstage_com_selector = dpg.add_combo(width=-1)
+                    self.hotstage_initialise = dpg.add_button(
                         label="Initialise", width=-1
                     )
 
@@ -183,6 +183,8 @@ class lcd_ui:
                 with dpg.table(header_row=False):
                     dpg.add_table_column()
                     dpg.add_table_column()
+                    dpg.add_table_column()
+                    dpg.add_table_column()
 
                     with dpg.table_row():
                         dpg.add_text("Memory Depth: ")
@@ -202,7 +204,6 @@ class lcd_ui:
                             default_value="10k",
                             tag="memory_depth",
                         )
-                    with dpg.table_row():
                         dpg.add_text("Number of averages: ")
                         self.delay_time = dpg.add_combo(
                             [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096],
@@ -210,6 +211,12 @@ class lcd_ui:
                             width=-1,
                             tag="number_of_averages",
                         )
+
+                    with dpg.table_row():
+                        dpg.add_text("Voltage (V):")
+                        self.voltage_input = dpg.add_input_float(default_value=1, step_fast=1, step=0.1)
+                        dpg.add_text("Frequency (Hz):")
+                        self.frequency_input = dpg.add_input_float(default_value=1000, step_fast=100, step=100)
 
                 with dpg.group(horizontal=True):
                     dpg.add_text("Output file path: ")
@@ -230,20 +237,7 @@ class lcd_ui:
                                 width=-1,
                             )
 
-                with dpg.table(header_row=False):
-                    dpg.add_table_column()
-                    dpg.add_table_column()
-                    with dpg.table_row():
-                        self.save_setup_button = dpg.add_button(
-                            label="Save Measurement Setup",
-                            width=-1,
-                            callback=self.save_measurement_settings,
-                        )
-                        self.load_setup_button = dpg.add_button(
-                            label="Load Measurement Setup",
-                            width=-1,
-                            callback=self.load_measurement_settings,
-                        )
+                
 
 
             with dpg.window(

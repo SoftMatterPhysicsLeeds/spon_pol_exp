@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from smponpol.instruments import LinkamHotstage, Agilent33220A
+from smponpol.instruments import Instec, Agilent33220A
 from enum import Enum
 from pyvisa.resources import Resource
 
@@ -48,27 +48,22 @@ class lcd_state:
     t_stable_start: float = 0
     voltage_list_mode: bool = False
     spectrometer_running: bool = True
-    linkam_connection_status: str = "Disconnected"
+    hotstage_connection_status: str = "Disconnected"
     agilent_connection_status: str = "Disconnected"
     oscilloscope_connection_status: str = "Disconnected"
     scope_run_number: int = 1 
-    linkam_action: str = "Idle"
-    linkam_temperature: float = 25.0
+    hotstage_action: str = "Idle"
+    hotstage_temperature: float = 25.0
     T_list: list = field(default_factory=list)
-    freq_list: list = field(default_factory=list)
-    voltage_list: list = field(default_factory=list)
     xdata: list = field(default_factory=list)
     ydata: list = field(default_factory=list)
-    averages: list = field(default_factory=list)
     T_step: int = 0
-    freq_step: int = 0
-    volt_step: int = 0
     T_log_time: list = field(default_factory=list)
     T_log_T: list = field(default_factory=list)
 
 
 @dataclass
 class lcd_instruments:
-    linkam: LinkamHotstage | None = None
+    hotstage: Instec | None = None
     agilent: Agilent33220A | None = None
     oscilloscope: Resource | None = None

@@ -71,10 +71,10 @@ def main():
     )
 
     dpg.configure_item(
-        frontend.linkam_initialise,
+        frontend.hotstage_initialise,
         callback=connect_to_instrument_callback,
         user_data={
-            "instrument": "linkam",
+            "instrument": "hotstage",
             "frontend": frontend,
             "instruments": instruments,
             "state": state,
@@ -102,7 +102,7 @@ def main():
 
     dpg.configure_item(
         frontend.go_to_temp_button,
-        callback=lambda: instruments.linkam.set_temperature(
+        callback=lambda: instruments.hotstage.set_temperature(
             dpg.get_value(frontend.go_to_temp_input),
             dpg.get_value(frontend.T_rate),
         ),
@@ -117,15 +117,15 @@ def main():
 
     find_instruments_thread(frontend)
 
-    linkam_thread = threading.Thread(
+    hotstage_thread = threading.Thread(
         target=read_temperature, args=(frontend, instruments, state)
     )
-    linkam_thread.daemon = True
+    hotstage_thread.daemon = True
     viewport_width = dpg.get_viewport_client_width()
     viewport_height = dpg.get_viewport_client_height()
     
     while dpg.is_dearpygui_running():
-        # check if linkam is connected. If it is, start thread to poll temperature.
+        # check if hotstage is connected. If it is, start thread to poll temperature.
         if (
             viewport_width != dpg.get_viewport_client_width()
             or viewport_height != dpg.get_viewport_client_height()
@@ -135,9 +135,9 @@ def main():
             viewport_height = dpg.get_viewport_client_height()
             frontend.draw_children(viewport_width, viewport_height)
 
-        if state.linkam_connection_status == "Connected":
-            linkam_thread.start()
-            state.linkam_connection_status = "Reading"
+        if state.hotstage_connection_status == "Connected":
+            hotstage_thread.start()
+            state.hotstage_connection_status = "Reading"
 
         handle_measurement_status(state, frontend, instruments)
 
@@ -145,9 +145,9 @@ def main():
 
     dpg.destroy_context()
 
-    if instruments.linkam:
-        instruments.linkam.stop()
-        instruments.linkam.close()
+    if instruments.hotstage:
+        instruments.hotstage.stop()
+        instruments.hotstage.close()
     if instruments.agilent:
         instruments.agilent.reset_and_clear()
         instruments.agilent.close()
