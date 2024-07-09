@@ -256,17 +256,18 @@ class Instec:
         self.T = 25.0
 
 
+
     def write_message(self, message):
 
-        print(message)
         
     
         time.sleep(0.05)
         self.stage.write_raw(message)
         time.sleep(0.05)
-        response = self.stage.read_raw(55)
-
-        print(response)
+        self.stage.read_raw()
+        response = self.stage.read_raw()
+        time.sleep(0.05)
+    
 
         int_list = list(response)
 
@@ -337,7 +338,7 @@ class Instec:
         self.exec_command(3)
 
     def hold(self, T):
-        self.write_register(8, 25.0) # set TF to T
+        self.write_register(8, T) # set TF to T
         self.exec_command(1) # Hold
 
     def ramp(self, T, rate):
