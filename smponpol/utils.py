@@ -225,7 +225,6 @@ def find_instruments(frontend: lcd_ui):
     visa_resources = rm.list_resources('?*')
     
 
-    # com_selector = [x for x in visa_resources if x.split("::")[0][0:4] == "ASRL"]
     usb_selector = [x for x in visa_resources if x.split("::")[0] == "USB0"]
 
     rigol_addresses = [x for x in usb_selector if x.split("::")[1] == "0x1AB1"]
