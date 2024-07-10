@@ -107,7 +107,7 @@ def init_hotstage(
 ) -> None:
     hotstage = Instec(dpg.get_value(frontend.hotstage_com_selector))
     try:
-        hotstage.current_temperature()
+        hotstage.get_temperature()
         dpg.set_value(frontend.hotstage_status, "Connected")
         dpg.hide_item(frontend.hotstage_initialise)
         instruments.hotstage = hotstage
@@ -223,13 +223,18 @@ def find_instruments(frontend: lcd_ui):
     dpg.set_value(frontend.measurement_status, "Finding Instruments...")
     rm = pyvisa.ResourceManager()
     visa_resources = rm.list_resources('?*')
+    
 
     # com_selector = [x for x in visa_resources if x.split("::")[0][0:4] == "ASRL"]
-    usb_selector = [x for x in visa_resources if x.split("::")[0][0:3] == "USB"]
+    usb_selector = [x for x in visa_resources if x.split("::")[0] == "USB0"]
 
-    dpg.configure_item(frontend.hotstage_com_selector, items=usb_selector)
-    dpg.configure_item(frontend.agilent_com_selector, items=usb_selector)
-    dpg.configure_item(frontend.oscilloscope_com_selector, items=usb_selector)
+    rigol_addresses = [x for x in usb_selector if x.split("::")[1] == "0x1AB1"]
+    agilent_addresses = [x for x in usb_selector if x.split("::")[1] == "0x0957"]
+    instec_addresses = [x for x in usb_selector if x.split("::")[1] == "0x03EB"]
+
+    dpg.configure_item(frontend.hotstage_com_selector, items=instec_addresses)
+    dpg.configure_item(frontend.agilent_com_selector, items=agilent_addresses)
+    dpg.configure_item(frontend.oscilloscope_com_selector, items=rigol_addresses)
 
     dpg.set_value(frontend.measurement_status, "Found instruments!")
     dpg.set_value(frontend.measurement_status, "Idle")
@@ -301,7 +306,7 @@ def read_temperature(frontend: lcd_ui, instruments: lcd_instruments, state: lcd_
         
         state.hotstage_temperature = temperature
         dpg.set_value(
-            frontend.hotstage_status, f"T: {str(temperature)}"
+            frontend.hotstage_status, f"T: {temperature:.2f}"
         )
         state.T_log_time.append(log_time)
         state.T_log_T.append(temperature)
@@ -309,14 +314,6 @@ def read_temperature(frontend: lcd_ui, instruments: lcd_instruments, state: lcd_
         if len(state.T_log_T) == 1000:
             state.T_log_T = state.T_log_T[1:]
             state.T_log_time = state.T_log_time[1:]
-
-        dpg.set_value(frontend.temperature_log, [state.T_log_time, state.T_log_T])
-        dpg.set_axis_limits(
-            frontend.temperature_log_T_axis,
-            min(state.T_log_T) - 0.2,
-            max(state.T_log_T) + 0.2,
-        )
-        dpg.fit_axis_data(frontend.temperature_log_time_axis)
 
         # state.hotstage_action = status
         time.sleep(time_step)
