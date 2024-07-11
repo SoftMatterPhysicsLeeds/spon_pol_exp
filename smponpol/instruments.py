@@ -218,10 +218,10 @@ class Rigol4204:
         self.scope.write(f"CHAN{channel}:SCAL {v_range}")
 
     def get_channel_trace(self, channel=1):
-        # self.scope.write(":STOP")
-        # if channel display is 'off', then don't do anything and just return.
-        if int(self.scope.query(":CHAN{channel}:DISP?").strip()) == 0:
-            return
+    # self.scope.write(":STOP")
+    # if channel display is 'off', then don't do anything and just return.
+    # if int(scope.query(":CHAN{channel}:DISP?").strip()) == 0:
+    #     return
 
         self.scope.write(f":WAV:SOUR CHAN{channel}")
         self.scope.write(":WAV:FORM ASC;:WAV:MODE MAX")
@@ -230,12 +230,13 @@ class Rigol4204:
         y_reference = float(self.scope.query("WAV:YREF?"))
         start_time = float(self.scope.query("WAV:XOR?"))
 
-        self.scope.query(":WAV:DATA?")
-        data = self.scope.read()
+        data = self.scope.query(":WAV:DATA?")
+        # data = scope.read()
         if self.scope.query("WAV:MODE?").strip() == "NORM":
             y_reference = y_reference * y_increment
-        data = [(float(x) - y_reference) *
-                y_increment for x in data.strip().split(',')]
+        # data = [(float(x) - y_reference) *
+        #         y_increment for x in data.strip().split(',')]
+        data = [float(x) for x in data.split(',')]
         times = [start_time+(x_increment * x) for x in range(len(data))]
 
         return times, data
@@ -252,6 +253,7 @@ class Instec:
         self.stage = rm.open_resource(address)
         self.stage.write_termination = ""
         self.stage.read_termination = ""
+        self.lock = threading.Lock()
 
         self.T = 25.0
 
@@ -260,13 +262,13 @@ class Instec:
     def write_message(self, message):
 
         
-    
-        time.sleep(0.05)
-        self.stage.write_raw(message)
-        time.sleep(0.05)
-        self.stage.read_raw()
-        response = self.stage.read_raw()
-        time.sleep(0.05)
+        with self.lock:
+            time.sleep(0.05)
+            self.stage.write_raw(message)
+            time.sleep(0.05)
+            self.stage.read_raw()
+            response = self.stage.read_raw()
+            time.sleep(0.05)
     
 
         int_list = list(response)

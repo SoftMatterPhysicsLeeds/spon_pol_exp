@@ -85,18 +85,23 @@ class lcd_ui:
             with dpg.plot(
                 anti_aliased=True,
             ) as self.results_plot_window:
-                self.results_V_axis = dpg.add_plot_axis(
-                    dpg.mvXAxis, label="voltage (V)", tag="V_axis"
+                self.results_time_axis = dpg.add_plot_axis(
+                    dpg.mvXAxis, label="time", tag="time_axis"
                 )
-                self.results_Cp_axis = dpg.add_plot_axis(
-                    dpg.mvYAxis, label="C_p", tag="Cp_axis"
+                self.results_V_axis = dpg.add_plot_axis(
+                    dpg.mvYAxis, label="V", tag="V_axis"
                 )
                 # series belong to a y axis. Note the tag name is used in the update
                 # function update_data
 
                 self.results_plot = dpg.add_scatter_series(
-                    x=[], y=[], label="Temp", parent="Cp_axis", tag="results_plot"
+                    x=[], y=[], label="Temp", parent="V_axis", tag="results_plot"
                 )
+                self.results_plot2 = dpg.add_scatter_series(
+                    x=[], y=[], label="Temp", parent="V_axis", tag="results_plot2"
+                )
+
+                
         
     def _make_control_window(self):
         with dpg.window(
@@ -188,7 +193,7 @@ class lcd_ui:
 
                     with dpg.table_row():
                         dpg.add_text("Memory Depth: ")
-                        self.meas_time_mode_selector = dpg.add_combo(
+                        self.memory_depth_selector = dpg.add_combo(
                             [
                                 "1k",
                                 "10k",

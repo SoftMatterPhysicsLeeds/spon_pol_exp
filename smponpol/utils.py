@@ -2,7 +2,7 @@ import dearpygui.dearpygui as dpg
 from smponpol.ui import lcd_ui
 from smponpol.excel_writer import make_excel
 from smponpol.dataclasses import lcd_instruments, lcd_state, Status, OutputType
-from smponpol.instruments import Agilent33220A, Instec
+from smponpol.instruments import Agilent33220A, Instec, Rigol4204
 import json
 import pyvisa
 import time
@@ -45,15 +45,17 @@ def start_measurement(
     instruments.agilent.set_output_load() # default is INF
     instruments.agilent.set_voltage(dpg.get_value(frontend.voltage_input))
     instruments.agilent.set_frequency(dpg.get_value(frontend.frequency_input))
-
     instruments.agilent.set_output('ON')
+
+    instruments.oscilloscope.set_memory_depth(dpg.get_value(frontend.memory_depth_selector))
+    instruments.oscilloscope.set_number_of_averages(dpg.get_value(frontend.num_averages))
+
 
     state.T_step = 0 
 
     T_str =f"{state.T_step + 1}: {state.T_list[state.T_step]}"
 
     state.resultsDict[T_str] = dict()
-    state.resultsDict[T_str]
     state.resultsDict[T_str]["time"] = []
     state.resultsDict[T_str]["channel1"] = []
     state.resultsDict[T_str]["channel2"] = []
@@ -66,10 +68,6 @@ def start_measurement(
 
 def stop_measurement(instruments: lcd_instruments, state: lcd_state, frontend: lcd_ui) -> None:
     instruments.hotstage.stop()
-    err = instruments.agilent.reset_and_clear()
-    if err:
-        init_agilent(frontend, instruments, state)
-        err = instruments.agilent.reset_and_clear()
     state.measurement_status = Status.IDLE
 
 
@@ -89,18 +87,14 @@ def init_oscilloscope(
 ) -> None:
     if instruments.oscilloscope:
         instruments.oscilloscope.close()
-    rm = pyvisa.ResourceManager()
-    instruments.oscilloscope = rm.open_resource(dpg.get_value(frontend.oscilloscope_com_selector))
-    # write_handler(instruments.oscilloscope, "*RST; *CLS")
+
+    instruments.oscilloscope = Rigol4204(dpg.get_value(frontend.oscilloscope_com_selector))
     dpg.set_value(frontend.oscilloscope_status, "Connected")
     dpg.configure_item(frontend.oscilloscope_initialise, label = "Reconnect")
-    dpg.show_item(frontend.num_averages)
-    dpg.show_item(frontend.num_averages_text)
+    
     state.oscilloscope_connection_status = "Connected"
     # oscilloscope.write(":AUToscale")
-    write_handler(instruments.oscilloscope,":WAVeform:FORMat ASCII")
-    write_handler(instruments.oscilloscope,":ACQuire:TYPE NORMal")
-    write_handler(instruments.oscilloscope,":TIMebase:DELay 0")
+    instruments.oscilloscope.init_scope_defaults()
 
 def init_hotstage(
     frontend: lcd_ui, instruments: lcd_instruments, state: lcd_state
@@ -155,10 +149,8 @@ def handle_measurement_status(
                     dpg.mvThemeCol_Button, (0, 100, 0), category=dpg.mvThemeCat_Core
                 )
         dpg.bind_item_theme(frontend.start_button, START_THEME)
-    elif state.measurement_status == Status.SET_TEMPERATURE and (
-        state.hotstage_action == "Stopped" or state.hotstage_action == "Holding"
-    ):
-        instruments.hotstage.set_temperature(
+    elif state.measurement_status == Status.SET_TEMPERATURE: 
+        instruments.hotstage.ramp(
             state.T_list[state.T_step], dpg.get_value(frontend.T_rate)
         )
         state.measurement_status = Status.GOING_TO_TEMPERATURE
@@ -183,38 +175,20 @@ def handle_measurement_status(
 
     elif state.measurement_status == Status.TEMPERATURE_STABILISED:
         state.measurement_status = Status.COLLECTING_DATA
-        err = instruments.agilent.set_frequency(state.freq_list[state.freq_step])
-        if err:
-            init_agilent(frontend, instruments, state)
-            instruments.agilent.set_frequency(state.freq_list[state.freq_step])
-        err = instruments.agilent.set_voltage(state.voltage_list[state.volt_step])
-        if err:
-            init_agilent(frontend, instruments, state)
-            instruments.agilent.set_voltage(state.voltage_list[state.volt_step])
-
-        run_spectrometer(frontend, instruments, state)
+        take_data(frontend, instruments, state)
 
     elif state.measurement_status == Status.COLLECTING_DATA:
 
-        if state.spectrometer_running:
+       
             dpg.set_value(
                 frontend.measurement_status,
-                f"Spectrometer: f = {state.freq_list[state.freq_step]:.2f}, V = {state.voltage_list[state.volt_step]}",
+                "Taking data"
             )
 
-        else: 
-            dpg.set_value(
-                frontend.measurement_status,
-                f"Oscilloscope: f = {state.freq_list[state.freq_step]:.2f}, V = {state.voltage_list[state.volt_step]}",
-            )
+        
 
     elif state.measurement_status == Status.FINISHED:
         instruments.hotstage.stop()
-        
-        err = instruments.agilent.reset_and_clear()
-        if err:
-            init_agilent(frontend, instruments, state)
-            instruments.agilent.reset_and_clear()
         state.measurement_status = Status.IDLE
         dpg.set_value(frontend.measurement_status, "Idle")
 
@@ -239,7 +213,7 @@ def find_instruments(frontend: lcd_ui):
     dpg.set_value(frontend.measurement_status, "Idle")
 
 
-def run_spectrometer(
+def take_data(
     frontend: lcd_ui, instruments: lcd_instruments, state: lcd_state
 ) -> None:
     thread = threading.Thread(
@@ -251,51 +225,15 @@ def run_spectrometer(
 
 def run_experiment(frontend: lcd_ui, instruments: lcd_state, state: lcd_state):
     result = dict()
-    time.sleep(dpg.get_value(frontend.delay_time))
-    result["CPD"], err = instruments.agilent.measure("CPD")
-    if err:
-        init_agilent(frontend, instruments, state)
-        result["CPD"], err = instruments.agilent.measure("CPD")
-    time.sleep(0.5)
-    result["GB"], err = instruments.agilent.measure("GB")
-    if err:
-        init_agilent(frontend, instruments, state)
-        result["GB"], err = instruments.agilent.measure("GB")
-    time.sleep(0.5)
+    times, data = instruments.oscilloscope.get_channel_trace(1)
+    _, data2 =  instruments.oscilloscope.get_channel_trace(2)
+
+    result["time"] = times
+    result["channel1"] = data
+    result["channel2"] = data2
+    
     get_result(result, state, frontend, instruments) 
 
-def run_oscilloscope(result, frontend: lcd_ui, instruments: lcd_state, state: lcd_state):
-    result = dict()
-    if state.oscilloscope_connection_status == "Connected":
-        state.spectrometer_running = False
-        result["averages"] = get_data_from_scope(frontend, instruments, state)
-        state.spectrometer_running = True
-        T_str =f"{state.T_step + 1}: {state.T_list[state.T_step]}"
-        freq_str = f"{state.freq_step+1}: {state.freq_list[state.freq_step]}"
-        for i in range(len(result["averages"])):
-            state.resultsDict[T_str][freq_str][f"Ave. Transmission #{i+1}"].append(result["averages"][i])
-
-def get_data_from_scope(frontend: lcd_ui, instruments: lcd_instruments, state: lcd_state):
-
-    n = dpg.get_value(frontend.num_averages)
-    total = []
-    for i in range(n):
-        print(f"Measuring {i+1}/{dpg.get_value(frontend.num_averages)} f = {state.freq_list[state.freq_step]:.2f}, V = {state.voltage_list[state.volt_step]} ")
-        write_handler(instruments.oscilloscope,":DIGitize CHANnel1")
-        data = "1"
-        try:    
-            data = instruments.oscilloscope.query(":WAV:DATA?")
-        except Exception as e:
-            print("Data read failed: ", e)
-        data = data.strip().split(",")
-        data = [float(x) for x in data[1:]]
-        average = sum(data) / len(data)
-        total.append(average)
-    # write_handler(instruments.oscilloscope,"*RST; *CLS")
-    write_handler(instruments.oscilloscope,":WAVeform:FORMat ASCII")
-    write_handler(instruments.oscilloscope,":ACQuire:TYPE NORMal")
-    write_handler(instruments.oscilloscope,":TIMebase:DELay 0")
-    return total
 
 def read_temperature(frontend: lcd_ui, instruments: lcd_instruments, state: lcd_state):
     log_time = 0
@@ -319,6 +257,16 @@ def read_temperature(frontend: lcd_ui, instruments: lcd_instruments, state: lcd_
         log_time += time_step
 
 
+def export_data_file(frontend: lcd_ui, state: lcd_state, times, channel1, channel2):
+    output_filename = frontend.output_filename + f"{dpg.get_value(frontend.voltage_input)} Volts" + \
+        f"{dpg.get_value(frontend.frequency_input)} Hz" + \
+        f"{state.temperature_list[state.temperature_step]} C.dat"
+
+    with open(output_filename, 'w') as f:
+        f.write("time\tChannel1\tChannel2\n")
+        for time_inc, channel1, channel2 in zip(times, channel1, channel2):
+            f.write(f"{time_inc}\t{channel1}\t{channel2}\n")
+
 def get_result(
     result: dict, state: lcd_state, frontend: lcd_ui, instruments: lcd_instruments
 ) -> None:
@@ -328,37 +276,17 @@ def get_result(
         pass
 
     else:
-        if len(state.voltage_list) == 1 and len(state.freq_list) == 1:
-            make_excel(
-                state.resultsDict,
-                dpg.get_value(frontend.output_file_path),
-                OutputType.SINGLE_VOLT_FREQ,
-            )
-        elif len(state.voltage_list) == 1:
-            make_excel(
-                state.resultsDict,
-                dpg.get_value(frontend.output_file_path),
-                OutputType.SINGLE_VOLT,
-            )
-        elif len(state.freq_list) == 1:
-            make_excel(
-                state.resultsDict,
-                dpg.get_value(frontend.output_file_path),
-                OutputType.SINGLE_FREQ,
-            )
-        else:
-            make_excel(
-                state.resultsDict,
-                dpg.get_value(frontend.output_file_path),
-                OutputType.MULTI_VOLT_FREQ
-            )
+        
+        
 
         with open(dpg.get_value(frontend.output_file_path), "w") as write_file:
             json.dump(state.resultsDict, write_file, indent=4)
+        
+        
+        
         if (
             state.T_step == len(state.T_list) - 1
-            and state.volt_step == len(state.voltage_list) - 1
-            and state.freq_step == len(state.freq_list) - 1
+            
         ):
             state.measurement_status = Status.FINISHED
 
@@ -368,97 +296,35 @@ def get_result(
                 and state.freq_step == len(state.freq_list) - 1
             ):
                 state.T_step += 1
-                state.freq_step = 0
-                state.volt_step = 0
-
-                T = state.T_list[state.T_step]
-                freq = state.freq_list[state.freq_step]
                 T_str =f"{state.T_step + 1}: {state.T_list[state.T_step]}"
-                state.resultsDict[
-                    f"{state.T_step + 1}: {state.T_list[state.T_step]}"
-                ] = dict()
-                freq_str = f"{state.freq_step+1}: {freq}"
+    
                 state.resultsDict[T_str] = dict()
-                state.resultsDict[T_str][freq_str] = dict()
-                state.resultsDict[T_str][freq_str]["volt"] = []
-                state.resultsDict[T_str][freq_str]["Cp"] = []
-                state.resultsDict[T_str][freq_str]["D"] = []
-                state.resultsDict[T_str][freq_str]["G"] = []
-                state.resultsDict[T_str][freq_str]["B"] = []
-                if instruments.oscilloscope:
-                    for i in range(dpg.get_value(frontend.num_averages)):
-                        state.resultsDict[T_str][freq_str][f"Ave. Transmission #{i+1}"] = []
-                err = instruments.agilent.set_voltage(0)
-                if err:
-                    init_agilent(frontend, instruments, state)
-                    instruments.agilent.set_voltage(0)
+                state.resultsDict[T_str]["time"] = []
+                state.resultsDict[T_str]["channel1"] = []
+                state.resultsDict[T_str]["channel2"] = []
+                
                 state.measurement_status = Status.SET_TEMPERATURE
-
-            elif state.volt_step == len(state.voltage_list) - 1:
-                state.freq_step += 1
-                state.volt_step = 0
-
-                T = state.T_list[state.T_step]
-                freq = state.freq_list[state.freq_step]
-
-                T_str =f"{state.T_step + 1}: {state.T_list[state.T_step]}"
-                freq_str = f"{state.freq_step+1}: {freq}"
-
-                state.resultsDict[T_str][freq_str] = dict()
-                state.resultsDict[T_str][freq_str]["volt"] = []
-                state.resultsDict[T_str][freq_str]["Cp"] = []
-                state.resultsDict[T_str][freq_str]["D"] = []
-                state.resultsDict[T_str][freq_str]["G"] = []
-                state.resultsDict[T_str][freq_str]["B"] = []
-                if instruments.oscilloscope:
-                    for i in range(dpg.get_value(frontend.num_averages)):
-                        state.resultsDict[T_str][freq_str][f"Ave. Transmission #{i+1}"] = []
-                state.measurement_status = Status.TEMPERATURE_STABILISED
-            else:
-                state.volt_step += 1
-                state.measurement_status = Status.TEMPERATURE_STABILISED
 
 
 def parse_result(result: dict, state: lcd_state, frontend: lcd_ui) -> None:
-    T = state.T_list[state.T_step]
-    freq = state.freq_list[state.freq_step]
-
     T_str =f"{state.T_step + 1}: {state.T_list[state.T_step]}"
-    freq_str = f"{state.freq_step+1}: {freq}"
+    state.resultsDict[T_str]["time"] = result["time"]
+    state.resultsDict[T_str]["channel1"] = result["channel1"]
+    state.resultsDict[T_str]["channel2"] = result["channel2"]
 
-    volt = state.voltage_list[state.volt_step]
-    state.resultsDict[T_str][freq_str]["volt"].append(volt)
-    state.resultsDict[T_str][freq_str]["Cp"].append(result["CPD"][0])
-    state.resultsDict[T_str][freq_str]["D"].append(result["CPD"][1])
-    state.resultsDict[T_str][freq_str]["G"].append(result["GB"][0])
-    state.resultsDict[T_str][freq_str]["B"].append(result["GB"][1])
-    if state.oscilloscope_connection_status == "Connected":
-        for i in range(len(result["averages"])):
-            state.resultsDict[T_str][freq_str][f"Ave. Transmission #{i+1}"].append(result["averages"][i])
 
-    if len(state.voltage_list) == 1 and len(state.freq_list) == 1:
-        state.xdata.append(T)
-        state.ydata.append(state.resultsDict[T_str][freq_str]["Cp"][0])
-        dpg.configure_item(frontend.results_V_axis, label="T")
-    elif len(state.voltage_list) == 1:
-        state.xdata.append(freq)
-        state.ydata.append(state.resultsDict[T_str][freq_str]["Cp"][0])
-        dpg.configure_item(frontend.results_V_axis, label="freq (Hz)")
-    elif len(state.freq_list) == 1:
-        state.xdata = state.resultsDict[T_str][freq_str]["volt"]
-        state.ydata = state.resultsDict[T_str][freq_str]["Cp"]
-        dpg.configure_item(frontend.results_V_axis, label="voltage (V)")
-    dpg.set_value(frontend.results_plot, [state.xdata, state.ydata])
+    dpg.set_value(frontend.results_plot, [result["time"], result["channel1"]])
+    dpg.set_value(frontend.results_plot2, [result["time"], result["channel2"]])
     
     if len(state.ydata)>0 and len(state.xdata)>0:
 
         dpg.set_axis_limits(
-            frontend.results_Cp_axis,
+            frontend.results_V_axis,
             min(state.ydata) - 0.1 * min(state.ydata),
             max(state.ydata) + 0.1 * max(state.ydata),
         )
         dpg.set_axis_limits(
-            frontend.results_V_axis,
+            frontend.results_time_axis,
             min(state.xdata) - 0.1,
             max(state.xdata) + 0.1,
         )
