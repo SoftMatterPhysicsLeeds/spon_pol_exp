@@ -121,6 +121,10 @@ class Agilent33220A:
     def set_output_load(self, output="INF"):
         self.wfg.write(f"OUTP:LOAD {output}")
 
+    def set_symmetry(self, value = 50):
+        self.wfg.write(f"FUNCtion:RAMP:SYMMetry {value}")
+    
+
     def close(self):
         self.wfg.close()
 
@@ -147,6 +151,8 @@ class Rigol4204:
         self.set_trigger_level()
         self.set_trigger_channel()
         self.set_trigger_mode()
+        self.initialise_channel(1)
+        self.initialise_channel(2)
 
 
     # Memory Depth options: 1k, 10k, 100k, 1M, 10M, 25M, 50M, 100M, 125M
@@ -217,7 +223,7 @@ class Rigol4204:
     def set_channel_vertical_range(self, channel=1, v_range=0.0):
         self.scope.write(f"CHAN{channel}:SCAL {v_range}")
 
-    def get_channel_trace(self, channel=1):
+    def get_channel_trace(self, channel=1, averages=64, depth="10k"):
     # self.scope.write(":STOP")
     # if channel display is 'off', then don't do anything and just return.
     # if int(scope.query(":CHAN{channel}:DISP?").strip()) == 0:
@@ -225,6 +231,10 @@ class Rigol4204:
 
         self.scope.write(f":WAV:SOUR CHAN{channel}")
         self.scope.write(":WAV:FORM ASC;:WAV:MODE MAX")
+
+        self.scope.write(f":ACQuire:TYPE AVERages;:ACQ:AVER {averages};")
+        self.scope.write(f":ACQ:MDEP {depth}")
+        
         x_increment = float(self.scope.query("WAV:XINC?"))
         y_increment = float(self.scope.query("WAV:YINC?"))
         y_reference = float(self.scope.query("WAV:YREF?"))

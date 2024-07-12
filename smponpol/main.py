@@ -149,8 +149,10 @@ def main():
         instruments.hotstage.stop()
         instruments.hotstage.close()
     if instruments.agilent:
-        instruments.agilent.reset_and_clear()
+        # instruments.agilent.reset_and_clear()
         instruments.agilent.close()
+    if instruments.oscilloscope:
+        instruments.oscilloscope.close()
 
 
 if __name__ == "__main__":

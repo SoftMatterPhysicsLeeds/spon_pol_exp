@@ -45,10 +45,10 @@ def start_measurement(
     instruments.agilent.set_output_load() # default is INF
     instruments.agilent.set_voltage(dpg.get_value(frontend.voltage_input))
     instruments.agilent.set_frequency(dpg.get_value(frontend.frequency_input))
+    instruments.agilent.set_symmetry()
     instruments.agilent.set_output('ON')
 
-    instruments.oscilloscope.set_memory_depth(dpg.get_value(frontend.memory_depth_selector))
-    instruments.oscilloscope.set_number_of_averages(dpg.get_value(frontend.num_averages))
+
 
 
     state.T_step = 0 
@@ -94,7 +94,7 @@ def init_oscilloscope(
     
     state.oscilloscope_connection_status = "Connected"
     # oscilloscope.write(":AUToscale")
-    instruments.oscilloscope.init_scope_defaults()
+    # instruments.oscilloscope.init_scope_defaults()
 
 def init_hotstage(
     frontend: lcd_ui, instruments: lcd_instruments, state: lcd_state
@@ -189,6 +189,7 @@ def handle_measurement_status(
 
     elif state.measurement_status == Status.FINISHED:
         instruments.hotstage.stop()
+        instruments.agilent.set_output('OFF')
         state.measurement_status = Status.IDLE
         dpg.set_value(frontend.measurement_status, "Idle")
 
@@ -225,8 +226,18 @@ def take_data(
 
 def run_experiment(frontend: lcd_ui, instruments: lcd_state, state: lcd_state):
     result = dict()
-    times, data = instruments.oscilloscope.get_channel_trace(1)
-    _, data2 =  instruments.oscilloscope.get_channel_trace(2)
+
+    # depth = dpg.get_value(frontend.memory_depth_selector)
+    # averages = dpg.get_value(frontend.num_averages)
+
+    depth = "10k"
+    averages = 64
+    
+    instruments.oscilloscope.initialise_channel(channel=1)
+    instruments.oscilloscope.initialise_channel(channel=2)
+
+    times, data = instruments.oscilloscope.get_channel_trace(1,averages,depth)
+    _, data2 =  instruments.oscilloscope.get_channel_trace(2,averages,depth)
 
     result["time"] = times
     result["channel1"] = data
@@ -316,15 +327,15 @@ def parse_result(result: dict, state: lcd_state, frontend: lcd_ui) -> None:
     dpg.set_value(frontend.results_plot, [result["time"], result["channel1"]])
     dpg.set_value(frontend.results_plot2, [result["time"], result["channel2"]])
     
-    if len(state.ydata)>0 and len(state.xdata)>0:
+    
 
-        dpg.set_axis_limits(
-            frontend.results_V_axis,
-            min(state.ydata) - 0.1 * min(state.ydata),
-            max(state.ydata) + 0.1 * max(state.ydata),
-        )
-        dpg.set_axis_limits(
-            frontend.results_time_axis,
-            min(state.xdata) - 0.1,
-            max(state.xdata) + 0.1,
-        )
+    # dpg.set_axis_limits(
+    #     frontend.results_V_axis,
+    #     min(result["channel2"]) - 0.1 * min(result["channel2"]),
+    #     max(result["channel2"]) + 0.1 * max(result["channel2"]),
+    # )
+    # dpg.set_axis_limits(
+    #     frontend.results_time_axis,
+    #     min(result["time"]) - 0.1,
+    #     max(result["time"]) + 0.1,
+    # )
