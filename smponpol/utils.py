@@ -94,7 +94,7 @@ def init_oscilloscope(
     
     state.oscilloscope_connection_status = "Connected"
     # oscilloscope.write(":AUToscale")
-    # instruments.oscilloscope.init_scope_defaults()
+    instruments.oscilloscope.init_scope_defaults()
 
 def init_hotstage(
     frontend: lcd_ui, instruments: lcd_instruments, state: lcd_state
@@ -227,14 +227,16 @@ def take_data(
 def run_experiment(frontend: lcd_ui, instruments: lcd_state, state: lcd_state):
     result = dict()
 
-    # depth = dpg.get_value(frontend.memory_depth_selector)
-    # averages = dpg.get_value(frontend.num_averages)
+    time.sleep(2)
 
-    depth = "10k"
-    averages = 64
+    depth = dpg.get_value(frontend.memory_depth_selector)
+    averages = dpg.get_value(frontend.num_averages)
+
+    # depth = "10k"
+    # averages = 64
     
-    instruments.oscilloscope.initialise_channel(channel=1)
-    instruments.oscilloscope.initialise_channel(channel=2)
+    # instruments.oscilloscope.initialise_channel(channel=1)
+    # instruments.oscilloscope.initialise_channel(channel=2)
 
     times, data = instruments.oscilloscope.get_channel_trace(1,averages,depth)
     _, data2 =  instruments.oscilloscope.get_channel_trace(2,averages,depth)

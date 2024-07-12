@@ -100,29 +100,29 @@ class Agilent33220A:
         self.wfg = rm.open_resource(address)
 
     def set_waveform(self, waveform="TRI"):
-        self.wfg.write(f"FUNC {waveform}")
+        self.wfg.write(f":FUNC {waveform}")
 
     def set_frequency(self, frequency=1000.0):
-        self.wfg.write(f"FREQ {frequency}")
+        self.wfg.write(f":FREQ {frequency}")
 
     def set_voltage(self, voltage=1.0):
-        self.wfg.write(f"VOLT {voltage}")
+        self.wfg.write(f":VOLT {voltage}")
 
     def set_voltage_unit(self, voltage_unit="VRMS"):
         # options VPP | VRMS | DBM
-        self.wfg.write(f"VOLT:UNIT {voltage_unit}")
+        self.wfg.write(f":VOLT:UNIT {voltage_unit}")
 
     def set_dc_offset(self, offset=0):
-        self.wfg.write(f"VOLT:OFFS {offset}")
+        self.wfg.write(f":VOLT:OFFS {offset}")
 
     def set_output(self, output="OFF"):
-        self.wfg.write(f"OUTP {output}")
+        self.wfg.write(f":OUTP {output}")
 
     def set_output_load(self, output="INF"):
-        self.wfg.write(f"OUTP:LOAD {output}")
+        self.wfg.write(f":OUTP:LOAD {output}")
 
     def set_symmetry(self, value = 50):
-        self.wfg.write(f"FUNCtion:RAMP:SYMMetry {value}")
+        self.wfg.write(f":FUNCtion:RAMP:SYMMetry {value}")
     
 
     def close(self):
@@ -208,7 +208,7 @@ class Rigol4204:
         self.set_channel_probe_attenuation(channel, attenuation)
         self.set_channel_vertical_offset(channel, offset)
         self.set_channel_vertical_range(channel, v_range)
-        self.scope.write(f"CHAN{channel}:BWL ON")
+        # self.scope.write(f"CHAN{channel}:BWL ON")
         self.scope.write(f"CHAN{channel}:DISP ON")
 
     def set_channel_coupling_mode(self, channel=1, mode="AC"):
@@ -220,7 +220,7 @@ class Rigol4204:
     def set_channel_vertical_offset(self, channel=1, offset=0.0):
         self.scope.write(f"CHAN{channel}:OFFS {offset}")
 
-    def set_channel_vertical_range(self, channel=1, v_range=0.0):
+    def set_channel_vertical_range(self, channel=1, v_range=0.1):
         self.scope.write(f"CHAN{channel}:SCAL {v_range}")
 
     def get_channel_trace(self, channel=1, averages=64, depth="10k"):
