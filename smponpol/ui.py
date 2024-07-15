@@ -16,6 +16,9 @@ VERTICAL_WIDGET_NUMBER = 4
 HEIGHT_DISCREPANCY = int(VIEWPORT_HEIGHT / VERTICAL_WIDGET_NUMBER)
 
 
+# TODO: 1) change initialise button for each equipment to one button for all (why do we care aboout individual things?).
+#       2) when searching for equipment, change the display value of the combo dropdown to the first available device because clicking is annoying. 
+
 class lcd_ui:
     def __init__(self):
         self.status = "Idle"

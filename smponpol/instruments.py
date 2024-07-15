@@ -1,4 +1,3 @@
-from typing import Any
 import pyvisa
 import threading
 import time

@@ -210,6 +210,10 @@ def find_instruments(frontend: lcd_ui):
     dpg.configure_item(frontend.agilent_com_selector, items=agilent_addresses)
     dpg.configure_item(frontend.oscilloscope_com_selector, items=rigol_addresses)
 
+    dpg.set_value(frontend.hotstage_com_selector, instec_addresses[0])
+    dpg.set_value(frontend.agilent_com_selector,agilent_addresses[0] )
+    dpg.set_value(frontend.oscilloscope_com_selector,rigol_addresses[0])
+
     dpg.set_value(frontend.measurement_status, "Found instruments!")
     dpg.set_value(frontend.measurement_status, "Idle")
 
