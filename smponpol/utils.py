@@ -78,7 +78,7 @@ def init_agilent(
         instruments.agilent.close()
     agilent = Agilent33220A(dpg.get_value(frontend.agilent_com_selector))
     dpg.set_value(frontend.agilent_status, "Connected")
-    dpg.configure_item(frontend.agilent_initialise, label = "Reconnect")
+    # dpg.configure_item(frontend.agilent_initialise, label = "Reconnect")
     instruments.agilent = agilent
     state.agilent_connection_status = "Connected"
 
@@ -90,7 +90,7 @@ def init_oscilloscope(
 
     instruments.oscilloscope = Rigol4204(dpg.get_value(frontend.oscilloscope_com_selector))
     dpg.set_value(frontend.oscilloscope_status, "Connected")
-    dpg.configure_item(frontend.oscilloscope_initialise, label = "Reconnect")
+    # dpg.configure_item(frontend.oscilloscope_initialise, label = "Reconnect")
     
     state.oscilloscope_connection_status = "Connected"
     # oscilloscope.write(":AUToscale")
@@ -103,7 +103,7 @@ def init_hotstage(
     try:
         hotstage.get_temperature()
         dpg.set_value(frontend.hotstage_status, "Connected")
-        dpg.hide_item(frontend.hotstage_initialise)
+        # dpg.hide_item(frontend.hotstage_initialise)
         instruments.hotstage = hotstage
         state.hotstage_connection_status = "Connected"
         with open("address.dat", "w") as f:
@@ -113,26 +113,33 @@ def init_hotstage(
         dpg.set_value(frontend.hotstage_status, "Couldn't connect")
 
 
-def connect_to_instrument_callback(sender, app_data, user_data):
-    if user_data["instrument"] == "hotstage":
-        thread = threading.Thread(
+
+def connect_to_instruments_callback(sender, app_data, user_data):
+
+    hotstage_thread = threading.Thread(
             target=init_hotstage,
             args=(user_data["frontend"], user_data["instruments"], user_data["state"]),
         )
-    elif user_data["instrument"] == "agilent":
-        thread = threading.Thread(
-            target=init_agilent,
-            args=(user_data["frontend"], user_data["instruments"], user_data["state"]),
-        )
+    
+    hotstage_thread.daemon = True
+    hotstage_thread.start()
 
-    elif user_data["instrument"] == 'oscilloscope':
-        thread = threading.Thread(
-            target=init_oscilloscope,
-            args=(user_data["frontend"], user_data["instruments"], user_data["state"]),
-        )
+    agilent_thread = threading.Thread(
+        target=init_agilent,
+        args=(user_data["frontend"], user_data["instruments"], user_data["state"]),
+    )
 
-    thread.daemon = True
-    thread.start()
+    agilent_thread.daemon = True
+    agilent_thread.start()
+
+    
+    oscilloscope_thread = threading.Thread(
+        target=init_oscilloscope,
+        args=(user_data["frontend"], user_data["instruments"], user_data["state"]),
+    )
+
+    oscilloscope_thread.daemon = True
+    oscilloscope_thread.start()
 
 
 def handle_measurement_status(
@@ -210,9 +217,9 @@ def find_instruments(frontend: lcd_ui):
     dpg.configure_item(frontend.agilent_com_selector, items=agilent_addresses)
     dpg.configure_item(frontend.oscilloscope_com_selector, items=rigol_addresses)
 
-    dpg.set_value(frontend.hotstage_com_selector, instec_addresses[0])
-    dpg.set_value(frontend.agilent_com_selector,agilent_addresses[0] )
-    dpg.set_value(frontend.oscilloscope_com_selector,rigol_addresses[0])
+    dpg.set_value(frontend.hotstage_com_selector, instec_addresses[0] if (len(instec_addresses) > 0)  else "")
+    dpg.set_value(frontend.agilent_com_selector,agilent_addresses[0] if len(agilent_addresses)> 0 else "")
+    dpg.set_value(frontend.oscilloscope_com_selector,rigol_addresses[0] if len(rigol_addresses) > 0 else "")
 
     dpg.set_value(frontend.measurement_status, "Found instruments!")
     dpg.set_value(frontend.measurement_status, "Idle")

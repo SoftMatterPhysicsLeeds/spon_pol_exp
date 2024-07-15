@@ -124,8 +124,7 @@ class lcd_ui:
                 dpg.add_table_column()
                 dpg.add_table_column()
                 dpg.add_table_column()
-                dpg.add_table_column()
-
+                
                 with dpg.table_row():
                     dpg.add_text("Instec: ")
                     self.hotstage_status = dpg.add_text(
@@ -133,9 +132,7 @@ class lcd_ui:
                     )
 
                     self.hotstage_com_selector = dpg.add_combo(width=-1)
-                    self.hotstage_initialise = dpg.add_button(
-                        label="Initialise", width=-1
-                    )
+                    
 
                 with dpg.table_row():
                     dpg.add_text("Agilent: ")
@@ -159,11 +156,9 @@ class lcd_ui:
                         label="Initialise", width=-1
                     )
 
-                with dpg.table_row():
-                    self.num_averages_text = dpg.add_text("N: ", show=False)
-                    self.num_averages = dpg.add_input_int(
-                        default_value=5, width=-1, step=0, step_fast=0, show=False
-                    )
+            self.initialise_instruments = dpg.add_button(
+                    label="Initialise", width=-1
+                )
 
             with dpg.table(header_row=False):
                 dpg.add_table_column()
