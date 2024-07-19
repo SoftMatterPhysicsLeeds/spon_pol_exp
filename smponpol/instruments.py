@@ -133,8 +133,13 @@ class Rigol4204:
         rm = pyvisa.ResourceManager()
         self.scope = rm.open_resource(address)
         self.scope.timeout = 100000.0
-        self.scope.write(":TIM:HREF:MODE CENT")
-        self.scope.write(":TRIG:NREJ ON")
+        # self.scope.write(":TIM:HREF:MODE CENT")
+        # self.scope.write(":TRIG:NREJ ON")
+        self.scope.write(f"CHAN{1}:DISP ON")
+        self.scope.write(f"CHAN{2}:DISP ON")
+
+    def run(self):
+        self.scope.write(":RUN")
 
     def init_scope_defaults(self):
         self.set_memory_depth()
@@ -158,6 +163,9 @@ class Rigol4204:
     def set_memory_depth(self, depth=10000):
         self.scope.write(f"ACQ:MDEP {depth}")
 
+    def set_timebase(self, base = 2e-6):
+        self.scope.write(f":TIMebase:SCALe {base}")
+
     # acqusition types: NORM, AVER, PEAK, HRES
     def set_acquisition_type(self, acq_type="AVER"):
         self.scope.write(f":ACQ:TYPE {acq_type}")
@@ -168,8 +176,6 @@ class Rigol4204:
     def set_offset(self, offset=0.0):
         self.scope.write(f":TIM:OFFS {offset}")
 
-    def set_scale(self, scale=0.01):
-        self.scope.write(f":TIM:SCAL {scale}")
 
     # Mode options: Main, XY, Roll
     def set_mode(self, mode="MAIN"):
@@ -222,31 +228,23 @@ class Rigol4204:
     def set_channel_vertical_range(self, channel=1, v_range=0.1):
         self.scope.write(f"CHAN{channel}:SCAL {v_range}")
 
-    def get_channel_trace(self, channel=1, averages=64, depth="10k"):
-    # self.scope.write(":STOP")
-    # if channel display is 'off', then don't do anything and just return.
-    # if int(scope.query(":CHAN{channel}:DISP?").strip()) == 0:
-    #     return
+    def get_channel_trace(self, channel=1):
+        self.scope.write(":STOP")
 
         self.scope.write(f":WAV:SOUR CHAN{channel}")
-        self.scope.write(":WAV:FORM ASC;:WAV:MODE MAX")
-
-        self.scope.write(f":ACQuire:TYPE AVERages;:ACQ:AVER {averages};")
-        self.scope.write(f":ACQ:MDEP {depth}")
+        self.scope.write(":WAV:FORM ASC;:WAV:MODE RAW")
+        self.scope.write(f":ACQuire:TYPE AVERages;:ACQ:AVER 64;")
+        self.scope.write(f":ACQ:MDEP 10k")
+        self.scope.write(":WAVeform:POINts 10000")
         
         x_increment = float(self.scope.query("WAV:XINC?"))
-        y_increment = float(self.scope.query("WAV:YINC?"))
-        y_reference = float(self.scope.query("WAV:YREF?"))
         start_time = float(self.scope.query("WAV:XOR?"))
 
         data = self.scope.query(":WAV:DATA?")
-        # data = scope.read()
-        if self.scope.query("WAV:MODE?").strip() == "NORM":
-            y_reference = y_reference * y_increment
-        # data = [(float(x) - y_reference) *
-        #         y_increment for x in data.strip().split(',')]
         data = [float(x) for x in data.split(',')]
         times = [start_time+(x_increment * x) for x in range(len(data))]
+
+        
 
         return times, data
 

@@ -41,6 +41,7 @@ def main():
     font_path = Path(MODULE_PATH / "assets/OpenSans-Regular.ttf")
     with dpg.font_registry():
         default_font = dpg.add_font(font_path, 18 * screensize[1] / 1080)
+        title_font = dpg.add_font(font_path, 20 * screensize[1] / 1080)
         status_font = dpg.add_font(font_path, 36 * screensize[1] / 1080)
 
     dpg.bind_font(default_font)
@@ -48,6 +49,10 @@ def main():
     state = lcd_state()
     frontend = lcd_ui()
     instruments = lcd_instruments()
+
+    dpg.bind_item_font(frontend.wfg_title, title_font)
+    dpg.bind_item_font(frontend.scope_title, title_font)
+    dpg.bind_item_font(frontend.output_title, title_font)
 
     dpg.bind_item_font(frontend.measurement_status, status_font)
     dpg.bind_item_font(frontend.status_label, status_font)
@@ -111,6 +116,9 @@ def main():
         if state.hotstage_connection_status == "Connected":
             hotstage_thread.start()
             state.hotstage_connection_status = "Reading"
+
+        if state.hotstage_connection_status == "Reading" and state.oscilloscope_connection_status == "Connected" and state.agilent_connection_status == "Connected":
+            dpg.configure_item(frontend.initialise_instruments, show=False)
 
         handle_measurement_status(state, frontend, instruments)
 

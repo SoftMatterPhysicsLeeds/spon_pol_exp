@@ -53,27 +53,27 @@ class lcd_ui:
             self.control_window,
             pos=[0, 0],
             width=width / 2,
-            height=height / 2,
+            height=height / 4,
         )
         dpg.configure_item(
-            self.measurement_settings_window,
-            pos=[width / 2, 0],
+            self.wfg_settings_window,
+            pos=[0, height/4],
             width=width / 2,
-            height=0.5 * height_mod,
+            height=height/4,
         )
         
         dpg.configure_item(
             self.temperature_list_window,
             width=width / 2,
-            height=0.5 * height_mod,
-            pos=[width / 2, 0.5 * height_mod],
+            height=height/4,
+            pos=[width / 2, 0],
         )
 
         dpg.configure_item(
             self.start_stop_button_window,
             pos=[width / 2, height_mod],
             width=width / 2,
-            height=(height/2)/4,
+            height=(height/4)/2,
         )
 
         dpg.configure_item(self.start_button, width=width / 4 - 10, height=-1)
@@ -160,29 +160,15 @@ class lcd_ui:
                     label="Initialise", width=-1
                 )
 
-            with dpg.table(header_row=False):
-                dpg.add_table_column()
-                dpg.add_table_column()
-                with dpg.table_row():
-                    dpg.add_text("Current Temperature:")
-                    self.current_temperature_display = dpg.add_text(f"{25.0}")
-                with dpg.table_row():
-                    dpg.add_text("Next Temperature:")
-                    self.next_temperature_display = dpg.add_text(f"{25.0}")
             with dpg.window(
-                label="Measurement Settings",
                 no_collapse=True,
                 no_close=True,
                 no_resize=True,
                 no_title_bar=True,
-            ) as self.measurement_settings_window:
-                # we want:
-                # memory depth,
-                # acquisition type, - set this to always averages to start with?
-                # number of averages
-                # waveform function (probably always triangle)
-                #
+            ) as self.wfg_settings_window:
+                
 
+                self.wfg_title = dpg.add_text("Waveform Generator Settings")
                 with dpg.table(header_row=False):
                     dpg.add_table_column()
                     dpg.add_table_column()
@@ -190,55 +176,41 @@ class lcd_ui:
                     dpg.add_table_column()
 
                     with dpg.table_row():
-                        dpg.add_text("Memory Depth: ")
-                        self.memory_depth_selector = dpg.add_combo(
-                            [
-                                "1k",
-                                "10k",
-                                "100k",
-                                "1M",
-                                "10M",
-                                "25M",
-                                "50M",
-                                "100M",
-                                "125M",
-                            ],
-                            width=-1,
-                            default_value="10k",
-                            tag="memory_depth",
-                        )
-                        dpg.add_text("Number of averages: ")
-                        self.delay_time = dpg.add_combo(
-                            [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096],
-                            default_value=64,
-                            width=-1,
-                            tag="number_of_averages",
-                        )
-
-                    with dpg.table_row():
                         dpg.add_text("Voltage (V):")
-                        self.voltage_input = dpg.add_input_float(default_value=1, step_fast=1, step=0.1)
+                        self.voltage_input = dpg.add_input_float(default_value=1, step_fast=1, step=0.1, width= -1)
                         dpg.add_text("Frequency (Hz):")
-                        self.frequency_input = dpg.add_input_float(default_value=1000, step_fast=100, step=100)
+                        self.frequency_input = dpg.add_input_float(default_value=1000, step_fast=100, step=100, width=-1)
 
-                with dpg.group(horizontal=True):
-                    dpg.add_text("Output file path: ")
-                    with dpg.table(header_row=False):
-                        dpg.add_table_column()
-                        dpg.add_table_column()
-                        with dpg.table_row():
-                            self.output_file_path = dpg.add_input_text(
-                                default_value="results.json",
-                                width=-1,
-                                tag="output_file_path",
-                            )
-                            self.browse_button = dpg.add_button(
-                                label="Browse",
-                                callback=lambda: self.open_tkinter_saveas_file_picker(
-                                    "output"
-                                ),
-                                width=-1,
-                            )
+                
+                self.scope_title = dpg.add_text("Oscilloscope Settings")
+                with dpg.table(header_row=False):
+                    dpg.add_table_column()
+                    dpg.add_table_column()
+                    dpg.add_table_column()
+                    dpg.add_table_column()
+                    with dpg.table_row():
+                        dpg.add_text("Timebase (s):")
+                        self.timebase_input = dpg.add_input_float(default_value=200e-6, step_fast=1e-6, step=1e-6, width=-1, format="%.3e")
+                        dpg.add_text("Vertical range (V): ")
+                        self.vertical_range_input = dpg.add_input_float(default_value=1, width=-1)
+                
+                self.output_title = dpg.add_text("Output settings")
+                with dpg.table(header_row=False):
+                    dpg.add_table_column()
+                    dpg.add_table_column()
+                    with dpg.table_row():
+                        self.output_file_path = dpg.add_input_text(
+                            default_value="results.json",
+                            width=-1,
+                            tag="output_file_path",
+                        )
+                        self.browse_button = dpg.add_button(
+                            label="Browse",
+                            callback=lambda: self.open_tkinter_saveas_file_picker(
+                                "output"
+                            ),
+                            width=-1,
+                        )
 
                 
 
@@ -263,17 +235,17 @@ class lcd_ui:
                                     label="Go to (°C):"
                                 )
                                 self.go_to_temp_input = dpg.add_input_float(
-                                    default_value=25, width=100, step=0, step_fast=0
+                                    default_value=25, width=100, step=0, step_fast=0, format="%.2f"
                                 )
                             with dpg.table_row():
                                 dpg.add_text("Rate (°C/min): ")
                                 self.T_rate = dpg.add_input_double(
-                                    default_value=10, width=100, step=0, step_fast=0
+                                    default_value=10, width=100, step=0, step_fast=0, format="%.1f"
                                 )
                             with dpg.table_row():
                                 dpg.add_text("Stab. Time (s)")
                                 self.stab_time = dpg.add_input_double(
-                                    default_value=30, width=100, step=0, step_fast=0
+                                    default_value=30, width=100, step=0, step_fast=0, format="%.2f"
                                 )
 
             with dpg.window(
@@ -358,7 +330,7 @@ def add_value_to_list_callback(sender, app_data, user_data):
     else:
         new_item_number = int(current_list[-1].split(":")[0]) + 1
     current_list.append(
-        f"{new_item_number}:\t" + str(dpg.get_value(user_data["add_text"]))
+        f"{new_item_number}:\t{dpg.get_value(user_data["add_text"]):.2f}"
     )
     dpg.configure_item(user_data["listbox_handle"], items=current_list)
 
@@ -411,7 +383,7 @@ def append_range_to_list_callback(sender, app_data, user_data):
         )
 
     new_list = current_list + [
-        f"{i+1+len(current_list)}:\t{x}" for i, x in enumerate(values_to_add)
+        f"{i+1+len(current_list)}:\t{x:.2f}" for i, x in enumerate(values_to_add)
     ]
 
     dpg.configure_item(user_data["listbox_handle"], items=new_list)
@@ -451,7 +423,7 @@ def replace_list_callback(sender, app_data, user_data):
             )
         )
 
-    new_list_numbered = [f"{i+1}:\t{x}" for i, x in enumerate(values_to_add)]
+    new_list_numbered = [f"{i+1}:\t{x:.2f}" for i, x in enumerate(values_to_add)]
 
     dpg.configure_item(user_data["listbox_handle"], items=new_list_numbered)
 
@@ -530,7 +502,7 @@ def make_variable_list_frame(default_val, min_val, max_val, logspace=False):
         )
         with dpg.group():
             add_text = dpg.add_input_float(
-                default_value=default_val, width=100, step=0, step_fast=0
+                default_value=default_val, width=100, step=0, step_fast=0, format="%.2f"
             )
             add_button = dpg.add_button(
                 label="Add",
