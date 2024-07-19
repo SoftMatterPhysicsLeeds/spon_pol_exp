@@ -4,9 +4,9 @@ from smponpol.utils import (
     lcd_state,
     read_temperature,
     handle_measurement_status,
-    connect_to_instrument_callback, 
+    connect_to_instruments_callback,
     start_measurement,
-    stop_measurement
+    stop_measurement,
 )
 from smponpol.themes import generate_global_theme
 import dearpygui.dearpygui as dpg
@@ -30,23 +30,20 @@ def main():
     dpg.create_viewport(
         title="LC Dielectrics", width=VIEWPORT_WIDTH, height=DRAW_HEIGHT
     )
-    
+
     dpg.set_viewport_large_icon(MODULE_PATH / "assets/LCD_icon.ico")
     dpg.set_viewport_small_icon(MODULE_PATH / "assets/LCD_icon.ico")
     dpg.setup_dearpygui()
     dpg.show_viewport()
     user32 = ctypes.windll.user32
     screensize = user32.GetSystemMetrics(0), user32.GetSystemMetrics(1)
-    
+
     font_path = Path(MODULE_PATH / "assets/OpenSans-Regular.ttf")
     with dpg.font_registry():
         default_font = dpg.add_font(font_path, 18 * screensize[1] / 1080)
         status_font = dpg.add_font(font_path, 36 * screensize[1] / 1080)
-        
 
     dpg.bind_font(default_font)
-    
-    
 
     state = lcd_state()
     frontend = lcd_ui()
@@ -57,34 +54,10 @@ def main():
     dpg.bind_item_font(frontend.start_button, status_font)
     dpg.bind_item_font(frontend.stop_button, status_font)
 
-
-
     dpg.configure_item(
-        frontend.agilent_initialise,
-        callback=connect_to_instrument_callback,
+        frontend.initialise_instruments,
+        callback=connect_to_instruments_callback,
         user_data={
-            "instrument": "agilent",
-            "frontend": frontend,
-            "instruments": instruments,
-            "state": state,
-        },
-    )
-
-    dpg.configure_item(
-        frontend.hotstage_initialise,
-        callback=connect_to_instrument_callback,
-        user_data={
-            "instrument": "hotstage",
-            "frontend": frontend,
-            "instruments": instruments,
-            "state": state,
-        },
-    )
-    dpg.configure_item(
-        frontend.oscilloscope_initialise,
-        callback=connect_to_instrument_callback,
-        user_data={
-            "instrument": "oscilloscope",
             "frontend": frontend,
             "instruments": instruments,
             "state": state,
@@ -123,7 +96,7 @@ def main():
     hotstage_thread.daemon = True
     viewport_width = dpg.get_viewport_client_width()
     viewport_height = dpg.get_viewport_client_height()
-    
+
     while dpg.is_dearpygui_running():
         # check if hotstage is connected. If it is, start thread to poll temperature.
         if (
