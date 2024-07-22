@@ -41,9 +41,9 @@ def start_measurement(
     state.T_list = [round(x, 1) for x in state.T_list]
 
 
-    instruments.oscilloscope.set_timebase(dpg.get_value(frontend.timebase_input))
-    instruments.oscilloscope.set_channel_vertical_range(1, dpg.get_value(frontend.vertical_range_input))
-    instruments.oscilloscope.set_channel_vertical_range(2, dpg.get_value(frontend.vertical_range_input))
+    # instruments.oscilloscope.set_timebase(dpg.get_value(frontend.timebase_input))
+    # instruments.oscilloscope.set_channel_vertical_range(1, dpg.get_value(frontend.vertical_range_input))
+    # instruments.oscilloscope.set_channel_vertical_range(2, dpg.get_value(frontend.vertical_range_input))
 
     instruments.agilent.set_waveform() # default is triangle
     instruments.agilent.set_voltage_unit() # default is VRMS

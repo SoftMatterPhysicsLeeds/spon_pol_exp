@@ -181,18 +181,18 @@ class lcd_ui:
                         dpg.add_text("Frequency (Hz):")
                         self.frequency_input = dpg.add_input_float(default_value=1000, step_fast=100, step=100, width=-1)
 
-                
-                self.scope_title = dpg.add_text("Oscilloscope Settings")
-                with dpg.table(header_row=False):
-                    dpg.add_table_column()
-                    dpg.add_table_column()
-                    dpg.add_table_column()
-                    dpg.add_table_column()
-                    with dpg.table_row():
-                        dpg.add_text("Timebase (s):")
-                        self.timebase_input = dpg.add_input_float(default_value=200e-6, step_fast=1e-6, step=1e-6, width=-1, format="%.3e")
-                        dpg.add_text("Vertical range (V): ")
-                        self.vertical_range_input = dpg.add_input_float(default_value=1, width=-1)
+                self.wfg_output_on_button = dpg.add_button(label = "Turn output on")
+                # self.scope_title = dpg.add_text("Oscilloscope Settings")
+                # with dpg.table(header_row=False):
+                #     dpg.add_table_column()
+                #     dpg.add_table_column()
+                #     dpg.add_table_column()
+                #     dpg.add_table_column()
+                #     with dpg.table_row():
+                #         dpg.add_text("Timebase (s):")
+                #         self.timebase_input = dpg.add_input_float(default_value=200e-6, step_fast=1e-6, step=1e-6, width=-1, format="%.3e")
+                #         dpg.add_text("Vertical range (V): ")
+                #         self.vertical_range_input = dpg.add_input_float(default_value=1, width=-1)
                 
                 self.output_title = dpg.add_text("Output settings")
                 with dpg.table(header_row=False):

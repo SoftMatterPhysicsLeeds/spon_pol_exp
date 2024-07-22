@@ -51,13 +51,57 @@ def main():
     instruments = lcd_instruments()
 
     dpg.bind_item_font(frontend.wfg_title, title_font)
-    dpg.bind_item_font(frontend.scope_title, title_font)
+    # dpg.bind_item_font(frontend.scope_title, title_font)
     dpg.bind_item_font(frontend.output_title, title_font)
 
     dpg.bind_item_font(frontend.measurement_status, status_font)
     dpg.bind_item_font(frontend.status_label, status_font)
     dpg.bind_item_font(frontend.start_button, status_font)
     dpg.bind_item_font(frontend.stop_button, status_font)
+
+
+    # configure output button
+
+# Define your themes and button somewhere in your code
+# - This theme should make the label text on the button white
+    with dpg.theme() as enabled_theme:
+        with dpg.theme_component(dpg.mvAll):
+            dpg.add_theme_color(
+                dpg.mvThemeCol_Button, (0, 100, 0), category=dpg.mvThemeCat_Core
+            )
+    # - This theme should make the label text on the button red
+    with dpg.theme() as disabled_theme:
+        with dpg.theme_component(dpg.mvAll):
+            dpg.add_theme_color(
+                dpg.mvThemeCol_Button, (204, 36, 29), category=dpg.mvThemeCat_Core
+                )
+            
+
+
+    def button_callback(sender, app_data, user_data):
+  # Unpack the user_data that is currently associated with the button
+    
+        state, enabled_theme, disabled_theme, instruments = user_data
+        # Flip the state
+        state = not state
+
+        if state:
+            instruments.agilent.set_output("OFF")
+            dpg.configure_item(sender, label = "Turn output on")
+        else:
+            instruments.agilent.set_output("ON")
+            dpg.configure_item(sender, label = "Turn output off")
+
+
+        # Apply the appropriate theme
+        dpg.bind_item_theme(sender, enabled_theme if state is True else disabled_theme)
+        # Update the user_data associated with the button
+        dpg.set_item_user_data(sender, (state, enabled_theme, disabled_theme,instruments))
+
+# - Create the button, assign the callback function, and assign the initial state (e.g. True) and the themes as user_data
+    # dpg.add_button(label="Some label", callback=button_callback, user_data=(True, enabled_theme, disabled_theme,))
+    dpg.configure_item(frontend.wfg_output_on_button, callback = button_callback, user_data=(True, enabled_theme, disabled_theme, instruments))
+
 
     dpg.configure_item(
         frontend.initialise_instruments,
@@ -87,7 +131,7 @@ def main():
     )
 
     dpg.bind_theme(generate_global_theme())
-
+    dpg.bind_item_theme(frontend.wfg_output_on_button, enabled_theme)
     # Search for instruments using a thread so GUI isn't blocked.
     thread = threading.Thread(target=find_instruments, args=(frontend,))
     thread.daemon = True
@@ -117,7 +161,11 @@ def main():
             hotstage_thread.start()
             state.hotstage_connection_status = "Reading"
 
-        if state.hotstage_connection_status == "Reading" and state.oscilloscope_connection_status == "Connected" and state.agilent_connection_status == "Connected":
+        if (
+            state.hotstage_connection_status == "Reading"
+            and state.oscilloscope_connection_status == "Connected"
+            and state.agilent_connection_status == "Connected"
+        ):
             dpg.configure_item(frontend.initialise_instruments, show=False)
 
         handle_measurement_status(state, frontend, instruments)
