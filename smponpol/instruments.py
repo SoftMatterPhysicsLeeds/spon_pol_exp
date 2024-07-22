@@ -97,6 +97,8 @@ class Agilent33220A:
     def __init__(self, address):
         rm = pyvisa.ResourceManager()
         self.wfg = rm.open_resource(address)
+        self.set_waveform()
+        self.set_symmetry()
 
     def set_waveform(self, waveform="TRI"):
         self.wfg.write(f":FUNC {waveform}")

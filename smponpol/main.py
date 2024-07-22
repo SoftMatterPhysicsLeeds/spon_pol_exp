@@ -59,11 +59,10 @@ def main():
     dpg.bind_item_font(frontend.start_button, status_font)
     dpg.bind_item_font(frontend.stop_button, status_font)
 
-
     # configure output button
 
-# Define your themes and button somewhere in your code
-# - This theme should make the label text on the button white
+    # Define your themes and button somewhere in your code
+    # - This theme should make the label text on the button white
     with dpg.theme() as enabled_theme:
         with dpg.theme_component(dpg.mvAll):
             dpg.add_theme_color(
@@ -74,34 +73,39 @@ def main():
         with dpg.theme_component(dpg.mvAll):
             dpg.add_theme_color(
                 dpg.mvThemeCol_Button, (204, 36, 29), category=dpg.mvThemeCat_Core
-                )
-            
-
+            )
 
     def button_callback(sender, app_data, user_data):
-  # Unpack the user_data that is currently associated with the button
-    
-        state, enabled_theme, disabled_theme, instruments = user_data
+        # Unpack the user_data that is currently associated with the button
+
+        state, enabled_theme, disabled_theme, instruments, frontend = user_data
         # Flip the state
         state = not state
 
         if state:
             instruments.agilent.set_output("OFF")
-            dpg.configure_item(sender, label = "Turn output on")
+            dpg.configure_item(sender, label="Turn output on")
         else:
             instruments.agilent.set_output("ON")
-            dpg.configure_item(sender, label = "Turn output off")
-
+            dpg.configure_item(sender, label="Turn output off")
 
         # Apply the appropriate theme
         dpg.bind_item_theme(sender, enabled_theme if state is True else disabled_theme)
         # Update the user_data associated with the button
-        dpg.set_item_user_data(sender, (state, enabled_theme, disabled_theme,instruments))
+        dpg.set_item_user_data(
+            sender, (state, enabled_theme, disabled_theme, instruments, frontend)
+        )
 
-# - Create the button, assign the callback function, and assign the initial state (e.g. True) and the themes as user_data
+    dpg.configure_item(frontend.voltage_input, callback = lambda: instruments.agilent.set_voltage(dpg.get_value(frontend.voltage_input)), on_enter = True)
+    dpg.configure_item(frontend.frequency_input, callback = lambda: instruments.agilent.set_frequency(dpg.get_value(frontend.frequency_input)),on_enter = True)
+
+    # - Create the button, assign the callback function, and assign the initial state (e.g. True) and the themes as user_data
     # dpg.add_button(label="Some label", callback=button_callback, user_data=(True, enabled_theme, disabled_theme,))
-    dpg.configure_item(frontend.wfg_output_on_button, callback = button_callback, user_data=(True, enabled_theme, disabled_theme, instruments))
-
+    dpg.configure_item(
+        frontend.wfg_output_on_button,
+        callback=button_callback,
+        user_data=(True, enabled_theme, disabled_theme, instruments, frontend),
+    )
 
     dpg.configure_item(
         frontend.initialise_instruments,
