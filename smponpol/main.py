@@ -28,7 +28,7 @@ def main():
     ctypes.windll.shcore.SetProcessDpiAwareness(2)
     MODULE_PATH = importlib.resources.files(__package__)
     dpg.create_viewport(
-        title="LC Dielectrics", width=VIEWPORT_WIDTH, height=DRAW_HEIGHT
+        title="SMPontaneous Polarisation", width=VIEWPORT_WIDTH, height=DRAW_HEIGHT
     )
 
     dpg.set_viewport_large_icon(MODULE_PATH / "assets/LCD_icon.ico")
