@@ -83,6 +83,7 @@ def init_agilent(
         instruments.agilent.close()
     agilent = Agilent33220A(dpg.get_value(frontend.agilent_com_selector))
     dpg.set_value(frontend.agilent_status, "Connected")
+    agilent.set_output("OFF")
     # dpg.configure_item(frontend.agilent_initialise, label = "Reconnect")
     instruments.agilent = agilent
     state.agilent_connection_status = "Connected"

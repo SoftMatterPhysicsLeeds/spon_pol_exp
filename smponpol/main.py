@@ -51,6 +51,8 @@ def main():
     frontend = lcd_ui()
     instruments = lcd_instruments()
 
+    
+
     dpg.bind_item_font(frontend.wfg_title, title_font)
     # dpg.bind_item_font(frontend.scope_title, title_font)
     dpg.bind_item_font(frontend.output_title, title_font)
@@ -197,6 +199,7 @@ def main():
         instruments.hotstage.close()
     if instruments.agilent:
         # instruments.agilent.reset_and_clear()
+        instruments.agilent.set_output("OFF")
         instruments.agilent.close()
     if instruments.oscilloscope:
         instruments.oscilloscope.close()
