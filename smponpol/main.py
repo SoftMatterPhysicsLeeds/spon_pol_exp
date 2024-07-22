@@ -7,6 +7,7 @@ from smponpol.utils import (
     connect_to_instruments_callback,
     start_measurement,
     stop_measurement,
+    take_data
 )
 from smponpol.themes import generate_global_theme
 import dearpygui.dearpygui as dpg
@@ -58,6 +59,9 @@ def main():
     dpg.bind_item_font(frontend.status_label, status_font)
     dpg.bind_item_font(frontend.start_button, status_font)
     dpg.bind_item_font(frontend.stop_button, status_font)
+    dpg.bind_item_font(frontend.autoscale_scope_button, status_font)
+    dpg.bind_item_font(frontend.get_single_shot_button, status_font)
+
 
     # configure output button
 
@@ -132,6 +136,16 @@ def main():
             dpg.get_value(frontend.go_to_temp_input),
             dpg.get_value(frontend.T_rate),
         ),
+    )
+
+    dpg.configure_item(
+        frontend.autoscale_scope_button,
+        callback = lambda: instruments.oscilloscope.autoscale()
+    )
+
+    dpg.configure_item(
+        frontend.get_single_shot_button,
+        callback = lambda: take_data(frontend, instruments, state, True) 
     )
 
     dpg.bind_theme(generate_global_theme())

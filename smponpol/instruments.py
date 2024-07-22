@@ -162,6 +162,9 @@ class Rigol4204:
 
 
     # Memory Depth options: 1k, 10k, 100k, 1M, 10M, 25M, 50M, 100M, 125M
+    def autoscale(self):
+        self.scope.write("AUToset")
+
     def set_memory_depth(self, depth=10000):
         self.scope.write(f"ACQ:MDEP {depth}")
 
@@ -235,8 +238,8 @@ class Rigol4204:
 
         self.scope.write(f":WAV:SOUR CHAN{channel}")
         self.scope.write(":WAV:FORM ASC;:WAV:MODE RAW")
-        self.scope.write(f":ACQuire:TYPE AVERages;:ACQ:AVER 64;")
-        self.scope.write(f":ACQ:MDEP 10k")
+        self.scope.write(":ACQuire:TYPE AVERages;:ACQ:AVER 64;")
+        self.scope.write(":ACQ:MDEP 10k")
         self.scope.write(":WAVeform:POINts 10000")
         
         x_increment = float(self.scope.query("WAV:XINC?"))

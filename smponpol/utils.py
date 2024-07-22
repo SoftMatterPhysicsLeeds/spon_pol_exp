@@ -38,7 +38,7 @@ def start_measurement(
         ]
     ]
 
-    state.T_list = [round(x, 1) for x in state.T_list]
+    state.T_list = [round(x, 2) for x in state.T_list]
 
 
     # instruments.oscilloscope.set_timebase(dpg.get_value(frontend.timebase_input))
@@ -236,16 +236,19 @@ def find_instruments(frontend: lcd_ui):
 
 
 def take_data(
-    frontend: lcd_ui, instruments: lcd_instruments, state: lcd_state
+    frontend: lcd_ui, instruments: lcd_instruments, state: lcd_state, single_shot = False
 ) -> None:
     thread = threading.Thread(
-        target=run_experiment, args=(frontend, instruments, state)
+        target=run_experiment, args=(frontend, instruments, state, single_shot)
     )
     thread.daemon = True
     thread.start()
 
 
-def run_experiment(frontend: lcd_ui, instruments: lcd_state, state: lcd_state):
+def run_experiment(frontend: lcd_ui, instruments: lcd_state, state: lcd_state, single_shot = False):
+    if single_shot:
+        state.measurement_status = Status.COLLECTING_DATA
+    
     result = dict()
 
     time.sleep(2)
@@ -266,7 +269,7 @@ def run_experiment(frontend: lcd_ui, instruments: lcd_state, state: lcd_state):
     result["channel1"] = data
     result["channel2"] = data2
     
-    get_result(result, state, frontend, instruments) 
+    get_result(result, state, frontend, instruments, single_shot) 
 
 
 def read_temperature(frontend: lcd_ui, instruments: lcd_instruments, state: lcd_state):
@@ -291,18 +294,24 @@ def read_temperature(frontend: lcd_ui, instruments: lcd_instruments, state: lcd_
         log_time += time_step
 
 
-def export_data_file(frontend: lcd_ui, state: lcd_state):
-    
-    T_str =f"{state.T_step + 1}: {state.T_list[state.T_step]}"
-    
-    times = state.resultsDict[T_str]["time"]
-    channel1 = state.resultsDict[T_str]["channel1"]
-    channel2 = state.resultsDict[T_str]["channel2"]
+def export_data_file(frontend: lcd_ui, state: lcd_state, result, single_shot=False):
+    if single_shot:
+        
+        times = result["time"]
+        channel1 = result["channel1"]
+        channel2 = result["channel2"]
+        output_filename = dpg.get_value(frontend.output_file_path).split('.json')[0] + f" {dpg.get_value(frontend.voltage_input)} Volts" + \
+            f" {dpg.get_value(frontend.frequency_input)} Hz" + \
+            f" {state.hotstage_temperature:.2f} C.dat"
+    else:
+        T_str =f"{state.T_step + 1}: {state.T_list[state.T_step]}"
+        times = state.resultsDict[T_str]["time"]
+        channel1 = state.resultsDict[T_str]["channel1"]
+        channel2 = state.resultsDict[T_str]["channel2"]
 
-
-    output_filename = dpg.get_value(frontend.output_file_path).split('.json')[0] + f" {dpg.get_value(frontend.voltage_input)} Volts" + \
-        f" {dpg.get_value(frontend.frequency_input)} Hz" + \
-        f" {state.T_list[state.T_step]} C.dat"
+        output_filename = dpg.get_value(frontend.output_file_path).split('.json')[0] + f" {dpg.get_value(frontend.voltage_input)} Volts" + \
+            f" {dpg.get_value(frontend.frequency_input)} Hz" + \
+            f" {state.T_list[state.T_step]} C.dat"
 
     with open(output_filename, 'w') as f:
         f.write("time\tChannel1\tChannel2\n")
@@ -310,9 +319,9 @@ def export_data_file(frontend: lcd_ui, state: lcd_state):
             f.write(f"{time_inc}\t{channel1_inc}\t{channel2_inc}\n")
 
 def get_result(
-    result: dict, state: lcd_state, frontend: lcd_ui, instruments: lcd_instruments
+    result: dict, state: lcd_state, frontend: lcd_ui, instruments: lcd_instruments, single_shot=False
 ) -> None:
-    parse_result(result, state, frontend)
+    parse_result(result, state, frontend, single_shot)
 
     if state.measurement_status == Status.IDLE:
         pass
@@ -324,31 +333,39 @@ def get_result(
         with open(dpg.get_value(frontend.output_file_path), "w") as write_file:
             json.dump(state.resultsDict, write_file, indent=4)
 
-        export_data_file(frontend, state)
-        
-        if (
-            state.T_step == len(state.T_list) - 1
-            
-        ):
-            state.measurement_status = Status.FINISHED
+        export_data_file(frontend, state, result, single_shot)
 
-        else:
-            state.T_step += 1
-            T_str =f"{state.T_step + 1}: {state.T_list[state.T_step]}"
-
-            state.resultsDict[T_str] = dict()
-            state.resultsDict[T_str]["time"] = []
-            state.resultsDict[T_str]["channel1"] = []
-            state.resultsDict[T_str]["channel2"] = []
-            
-            state.measurement_status = Status.SET_TEMPERATURE
+        if single_shot:
+            state.measurement_status = Status.IDLE
+            dpg.set_value(frontend.measurement_status, "Idle")
 
 
-def parse_result(result: dict, state: lcd_state, frontend: lcd_ui) -> None:
-    T_str =f"{state.T_step + 1}: {state.T_list[state.T_step]}"
-    state.resultsDict[T_str]["time"] = result["time"]
-    state.resultsDict[T_str]["channel1"] = result["channel1"]
-    state.resultsDict[T_str]["channel2"] = result["channel2"]
+        if not single_shot:   
+            if (
+                state.T_step == len(state.T_list) - 1
+                
+            ):
+                state.measurement_status = Status.FINISHED
+
+            else:
+                state.T_step += 1
+                T_str =f"{state.T_step + 1}: {state.T_list[state.T_step]}"
+
+                state.resultsDict[T_str] = dict()
+                state.resultsDict[T_str]["time"] = []
+                state.resultsDict[T_str]["channel1"] = []
+                state.resultsDict[T_str]["channel2"] = []
+                
+                state.measurement_status = Status.SET_TEMPERATURE
+
+
+def parse_result(result: dict, state: lcd_state, frontend: lcd_ui, single_shot=False) -> None:
+    if not single_shot:
+    
+        T_str =f"{state.T_step + 1}: {state.T_list[state.T_step]}"
+        state.resultsDict[T_str]["time"] = result["time"]
+        state.resultsDict[T_str]["channel1"] = result["channel1"]
+        state.resultsDict[T_str]["channel2"] = result["channel2"]
 
 
     dpg.set_value(frontend.results_plot, [result["time"], result["channel1"]])
