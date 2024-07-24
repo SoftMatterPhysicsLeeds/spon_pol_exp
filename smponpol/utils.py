@@ -45,12 +45,12 @@ def start_measurement(
     # instruments.oscilloscope.set_channel_vertical_range(1, dpg.get_value(frontend.vertical_range_input))
     # instruments.oscilloscope.set_channel_vertical_range(2, dpg.get_value(frontend.vertical_range_input))
 
-    instruments.agilent.set_waveform() # default is triangle
-    instruments.agilent.set_voltage_unit() # default is VRMS
-    instruments.agilent.set_output_load() # default is INF
+    # instruments.agilent.set_waveform() # default is triangle
+    # instruments.agilent.set_voltage_unit() # default is VRMS
+    # instruments.agilent.set_output_load() # default is INF
     instruments.agilent.set_voltage(dpg.get_value(frontend.voltage_input))
     instruments.agilent.set_frequency(dpg.get_value(frontend.frequency_input))
-    instruments.agilent.set_symmetry()
+    # instruments.agilent.set_symmetry()
     instruments.agilent.set_output('ON')
 
 
@@ -158,7 +158,7 @@ def handle_measurement_status(
 ):
     current_wait = 0
     if state.measurement_status == Status.IDLE:
-        dpg.set_value(frontend.measurement_status, "Idle")
+        dpg.set_value(frontend.measurement_status, f"Idle\tT: {state.hotstage_temperature:.2f}°C")
         dpg.configure_item(frontend.start_button, enabled=True)
 
         with dpg.theme() as START_THEME:
@@ -173,7 +173,7 @@ def handle_measurement_status(
         )
         state.measurement_status = Status.GOING_TO_TEMPERATURE
         dpg.set_value(
-            frontend.measurement_status, f"Going to {state.T_list[state.T_step]} C"
+            frontend.measurement_status, f"Going to {state.T_list[state.T_step]}°C\tT: {state.hotstage_temperature:.2f}°C"
         )
     elif state.measurement_status == Status.GOING_TO_TEMPERATURE and (
         state.hotstage_temperature > state.T_list[state.T_step] - 0.1
@@ -186,7 +186,7 @@ def handle_measurement_status(
         current_wait = time.time() - state.t_stable_start
         dpg.set_value(
             frontend.measurement_status,
-            f"Stabilising temperature for {current_wait:.2f}/{dpg.get_value(frontend.stab_time)}s",
+            f"Stabilising temperature for {current_wait:.2f}/{dpg.get_value(frontend.stab_time)}s\tT: {state.hotstage_temperature:.2f}°C",
         )
         if current_wait >= dpg.get_value(frontend.stab_time):
             state.measurement_status = Status.TEMPERATURE_STABILISED
@@ -200,7 +200,7 @@ def handle_measurement_status(
        
             dpg.set_value(
                 frontend.measurement_status,
-                "Taking data"
+                f"Taking data\tT: {state.hotstage_temperature}°C"
             )
 
         
@@ -209,7 +209,7 @@ def handle_measurement_status(
         instruments.hotstage.stop()
         instruments.agilent.set_output('OFF')
         state.measurement_status = Status.IDLE
-        dpg.set_value(frontend.measurement_status, "Idle")
+        dpg.set_value(frontend.measurement_status, f"Idle\tT: {state.hotstage_temperature:.2f}°C")
 
 
 def find_instruments(frontend: lcd_ui):

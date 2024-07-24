@@ -53,14 +53,14 @@ class lcd_ui:
             self.control_window,
             pos=[0, 0],
             width=width / 2,
-            height=height / 4,
+            height=height / 2,
         )
-        dpg.configure_item(
-            self.wfg_settings_window,
-            pos=[0, height/4],
-            width=width / 2,
-            height=height/4,
-        )
+        # dpg.configure_item(
+        #     self.wfg_settings_window,
+        #     pos=[0, height/4],
+        #     width=width / 2,
+        #     height=height/4,
+        # )
         
         dpg.configure_item(
             self.temperature_list_window,
@@ -130,54 +130,49 @@ class lcd_ui:
                     self.measurement_status = dpg.add_text(
                         f"{self.status}", tag="status_display"
                     )
-            with dpg.table(header_row=False):
-                dpg.add_table_column()
-                dpg.add_table_column()
-                dpg.add_table_column()
-                
-                with dpg.table_row():
-                    dpg.add_text("Instec: ")
-                    self.hotstage_status = dpg.add_text(
-                        f"{self.hotstage_status}", tag="hotstage_status_display"
-                    )
 
-                    self.hotstage_com_selector = dpg.add_combo(width=-1)
+            with dpg.group() as self.init_instruments_group:
+                with dpg.table(header_row=False):
+                    dpg.add_table_column()
+                    dpg.add_table_column()
+                    dpg.add_table_column()
                     
+                    with dpg.table_row():
+                        dpg.add_text("Instec: ")
+                        self.hotstage_status = dpg.add_text(
+                            f"{self.hotstage_status}", tag="hotstage_status_display"
+                        )
 
-                with dpg.table_row():
-                    dpg.add_text("Agilent: ")
-                    self.agilent_status = dpg.add_text(
-                        f"{self.agilent_status}", tag="waveformgenerator_status_display"
-                    )
+                        self.hotstage_com_selector = dpg.add_combo(width=-1)
+                        
 
-                    self.agilent_com_selector = dpg.add_combo(width=-1)
-                    self.agilent_initialise = dpg.add_button(
+                    with dpg.table_row():
+                        dpg.add_text("Agilent: ")
+                        self.agilent_status = dpg.add_text(
+                            f"{self.agilent_status}", tag="waveformgenerator_status_display"
+                        )
+
+                        self.agilent_com_selector = dpg.add_combo(width=-1)
+                        self.agilent_initialise = dpg.add_button(
+                            label="Initialise", width=-1
+                        )
+
+                    with dpg.table_row():
+                        dpg.add_text("Rigol: ")
+                        self.oscilloscope_status = dpg.add_text(
+                            f"{self.oscilloscope_status}", tag="oscilloscope_status_display"
+                        )
+
+                        self.oscilloscope_com_selector = dpg.add_combo(width=-1)
+                        self.oscilloscope_initialise = dpg.add_button(
+                            label="Initialise", width=-1
+                        )
+
+                self.initialise_instruments = dpg.add_button(
                         label="Initialise", width=-1
                     )
 
-                with dpg.table_row():
-                    dpg.add_text("Rigol: ")
-                    self.oscilloscope_status = dpg.add_text(
-                        f"{self.oscilloscope_status}", tag="oscilloscope_status_display"
-                    )
-
-                    self.oscilloscope_com_selector = dpg.add_combo(width=-1)
-                    self.oscilloscope_initialise = dpg.add_button(
-                        label="Initialise", width=-1
-                    )
-
-            self.initialise_instruments = dpg.add_button(
-                    label="Initialise", width=-1
-                )
-
-            with dpg.window(
-                no_collapse=True,
-                no_close=True,
-                no_resize=True,
-                no_title_bar=True,
-            ) as self.wfg_settings_window:
-                
-
+            with dpg.group(show=False) as self.output_controls_after_init_group:
                 self.wfg_title = dpg.add_text("Waveform Generator Settings")
                 with dpg.table(header_row=False):
                     dpg.add_table_column()
@@ -187,7 +182,7 @@ class lcd_ui:
 
                     with dpg.table_row():
                         dpg.add_text("Voltage (V):")
-                        self.voltage_input = dpg.add_input_float(default_value=1, step_fast=1, step=0.1, width= -1)
+                        self.voltage_input = dpg.add_input_float(default_value=0.1, step_fast=1, step=0.1, width= -1)
                         dpg.add_text("Frequency (Hz):")
                         self.frequency_input = dpg.add_input_float(default_value=1000, step_fast=100, step=100, width=-1)
 
@@ -239,7 +234,7 @@ class lcd_ui:
                             with dpg.table_row():
                                 dpg.add_text("Rate (°C/min): ")
                                 self.T_rate = dpg.add_input_double(
-                                    default_value=10, width=100, step=0, step_fast=0, format="%.1f"
+                                    default_value=2, width=100, step=0, step_fast=0, format="%.1f"
                                 )
                             with dpg.table_row():
                                 dpg.add_text("Stab. Time (s)")

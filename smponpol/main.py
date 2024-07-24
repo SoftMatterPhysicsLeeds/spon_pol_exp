@@ -134,7 +134,7 @@ def main():
 
     dpg.configure_item(
         frontend.go_to_temp_button,
-        callback=lambda: instruments.hotstage.set_temperature(
+        callback=lambda: instruments.hotstage.ramp(
             dpg.get_value(frontend.go_to_temp_input),
             dpg.get_value(frontend.T_rate),
         ),
@@ -186,13 +186,12 @@ def main():
             and state.oscilloscope_connection_status == "Connected"
             and state.agilent_connection_status == "Connected"
         ):
-            dpg.configure_item(frontend.initialise_instruments, show=False)
+            dpg.configure_item(frontend.init_instruments_group, show=False)
+            dpg.configure_item(frontend.output_controls_after_init_group, show=True)
 
         handle_measurement_status(state, frontend, instruments)
 
         dpg.render_dearpygui_frame()
-
-    dpg.destroy_context()
 
     if instruments.hotstage:
         instruments.hotstage.stop()
@@ -203,6 +202,10 @@ def main():
         instruments.agilent.close()
     if instruments.oscilloscope:
         instruments.oscilloscope.close()
+
+    dpg.destroy_context()
+
+    
 
 
 if __name__ == "__main__":

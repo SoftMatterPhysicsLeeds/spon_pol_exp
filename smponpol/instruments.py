@@ -99,6 +99,10 @@ class Agilent33220A:
         self.wfg = rm.open_resource(address)
         self.set_waveform()
         self.set_symmetry()
+        self.set_voltage_unit()
+        self.set_output_load()
+        self.set_voltage(0.1)
+        self.set_frequency(1000)
 
     def set_waveform(self, waveform="TRI"):
         self.wfg.write(f":FUNC {waveform}")
@@ -135,8 +139,8 @@ class Rigol4204:
         rm = pyvisa.ResourceManager()
         self.scope = rm.open_resource(address)
         self.scope.timeout = 100000.0
-        # self.scope.write(":TIM:HREF:MODE CENT")
-        # self.scope.write(":TRIG:NREJ ON")
+        self.scope.write(":TIM:HREF:MODE CENT")
+        self.scope.write(":TRIG:NREJ ON")
         self.scope.write(f"CHAN{1}:DISP ON")
         self.scope.write(f"CHAN{2}:DISP ON")
 
