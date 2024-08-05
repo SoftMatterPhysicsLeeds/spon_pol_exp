@@ -41,20 +41,11 @@ def start_measurement(
     state.T_list = [round(x, 2) for x in state.T_list]
 
 
-    # instruments.oscilloscope.set_timebase(dpg.get_value(frontend.timebase_input))
-    # instruments.oscilloscope.set_channel_vertical_range(1, dpg.get_value(frontend.vertical_range_input))
-    # instruments.oscilloscope.set_channel_vertical_range(2, dpg.get_value(frontend.vertical_range_input))
-
-    # instruments.agilent.set_waveform() # default is triangle
-    # instruments.agilent.set_voltage_unit() # default is VRMS
-    # instruments.agilent.set_output_load() # default is INF
+   
     instruments.agilent.set_voltage(dpg.get_value(frontend.voltage_input))
     instruments.agilent.set_frequency(dpg.get_value(frontend.frequency_input))
-    # instruments.agilent.set_symmetry()
-    instruments.agilent.set_output('ON')
-
-
-
+  
+    instruments.agilent.set_output('OFF')
 
     state.T_step = 0 
 
@@ -252,7 +243,9 @@ def run_experiment(frontend: lcd_ui, instruments: lcd_state, state: lcd_state, s
     
     result = dict()
 
-    time.sleep(2)
+    instruments.agilent.set_output('ON')
+
+    time.sleep(5)
 
 
     # depth = "10k"
@@ -265,6 +258,7 @@ def run_experiment(frontend: lcd_ui, instruments: lcd_state, state: lcd_state, s
     _, data2 =  instruments.oscilloscope.get_channel_trace(2)
 
     instruments.oscilloscope.run()
+    instruments.agilent.set_output('OFF')
 
     result["time"] = times
     result["channel1"] = data
@@ -301,8 +295,8 @@ def export_data_file(frontend: lcd_ui, state: lcd_state, result, single_shot=Fal
         times = result["time"]
         channel1 = result["channel1"]
         channel2 = result["channel2"]
-        output_filename = dpg.get_value(frontend.output_file_path).split('.json')[0] + f" {dpg.get_value(frontend.voltage_input)} Volts" + \
-            f" {dpg.get_value(frontend.frequency_input)} Hz" + \
+        output_filename = dpg.get_value(frontend.output_file_path).split('.json')[0] + f" {dpg.get_value(frontend.voltage_input):.2f} Volts" + \
+            f" {dpg.get_value(frontend.frequency_input):.1f} Hz" + \
             f" {state.hotstage_temperature:.2f} C.dat"
     else:
         T_str =f"{state.T_step + 1}: {state.T_list[state.T_step]}"
@@ -310,9 +304,9 @@ def export_data_file(frontend: lcd_ui, state: lcd_state, result, single_shot=Fal
         channel1 = state.resultsDict[T_str]["channel1"]
         channel2 = state.resultsDict[T_str]["channel2"]
 
-        output_filename = dpg.get_value(frontend.output_file_path).split('.json')[0] + f" {dpg.get_value(frontend.voltage_input)} Volts" + \
-            f" {dpg.get_value(frontend.frequency_input)} Hz" + \
-            f" {state.T_list[state.T_step]} C.dat"
+        output_filename = dpg.get_value(frontend.output_file_path).split('.json')[0] + f" {dpg.get_value(frontend.voltage_input):.2f} Volts" + \
+            f" {dpg.get_value(frontend.frequency_input):.1f} Hz" + \
+            f" {state.T_list[state.T_step]:.2f} C.dat"
 
     with open(output_filename, 'w') as f:
         f.write("time\tChannel1\tChannel2\n")
