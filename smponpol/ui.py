@@ -27,6 +27,7 @@ class lcd_ui:
         self.oscilloscope_status = "Not Connected"
         self._make_control_window()
         self._make_graph_windows()
+        self._make_status_window()
         self.draw_children(VIEWPORT_WIDTH, DRAW_HEIGHT)
 
         with dpg.theme() as START_THEME:
@@ -47,40 +48,42 @@ class lcd_ui:
         dpg.configure_item(
             self.results_graph, pos=[0, height / 2], width=width, height=height / 2
         )
-
+        
         height_mod = height / 2 - (height/2)/4
+
+        dpg.configure_item(
+            self.status_window,
+            pos = [0,0],
+            width = width,
+            height = height / 8
+        )
+
         dpg.configure_item(
             self.control_window,
-            pos=[0, 0],
+            pos=[0, height/8],
             width=width / 2,
-            height=height / 2,
+            height=height / 4 - height/16,
         )
-        # dpg.configure_item(
-        #     self.wfg_settings_window,
-        #     pos=[0, height/4],
-        #     width=width / 2,
-        #     height=height/4,
-        # )
         
         dpg.configure_item(
             self.temperature_list_window,
             width=width / 2,
-            height=height/4,
-            pos=[width / 2, 0],
+            height=height / 4 - height/16,
+            pos=[0, height / 4 + height/16 ],
         )
 
         dpg.configure_item(
             self.more_control_window,
-            pos = [width/2, height/4],
+            pos = [width/2, height/8],
             width=width/2,
-            height = height/8
+            height = (3*height/8)/2
         )
 
         dpg.configure_item(
             self.start_stop_button_window,
-            pos=[width / 2, height_mod],
+            pos=[width / 2, height/8 + (3*height/8)/2],
             width=width / 2,
-            height=(height/4)/2,
+            height=(3*height/8)/2,
         )
 
 
@@ -119,6 +122,21 @@ class lcd_ui:
                 )
 
                 
+    def _make_status_window(self):
+        with dpg.window(
+            label="Status",
+            no_collapse=True,
+            no_close=True,
+            no_title_bar=True,
+            no_resize=True,
+        ) as self.status_window:
+            with dpg.group(tag="status_window"):
+                with dpg.group(horizontal=True):
+                    self.status_label = dpg.add_text("Status: ")
+                    self.measurement_status = dpg.add_text(
+                        f"{self.status}", tag="status_display"
+                    )
+
         
     def _make_control_window(self):
         with dpg.window(
@@ -128,12 +146,6 @@ class lcd_ui:
             no_title_bar=True,
             no_resize=True,
         ) as self.control_window:
-            with dpg.group(tag="status_window"):
-                with dpg.group(horizontal=True):
-                    self.status_label = dpg.add_text("Status: ")
-                    self.measurement_status = dpg.add_text(
-                        f"{self.status}", tag="status_display"
-                    )
 
             with dpg.group() as self.init_instruments_group:
                 with dpg.table(header_row=False):
