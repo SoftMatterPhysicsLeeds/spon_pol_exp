@@ -143,6 +143,9 @@ class Rigol4204:
         self.scope.write(":TRIG:NREJ ON")
         self.scope.write(f"CHAN{1}:DISP ON")
         self.scope.write(f"CHAN{2}:DISP ON")
+        self.set_trigger_type()
+        self.set_trigger_slope()
+        self.set_trigger_level()
 
     def run(self):
         self.scope.write(":RUN")

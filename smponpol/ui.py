@@ -104,6 +104,10 @@ class lcd_ui:
                 self.results_V_axis = dpg.add_plot_axis(
                     dpg.mvYAxis, label="V", tag="V_axis"
                 )
+
+                self.results_current_axis = dpg.add_plot_axis(
+                    dpg.mvYAxis, label="I", tag="current_axis"
+                )
                 # series belong to a y axis. Note the tag name is used in the update
                 # function update_data
 
@@ -111,7 +115,7 @@ class lcd_ui:
                     x=[], y=[], label="Temp", parent="V_axis", tag="results_plot"
                 )
                 self.results_plot2 = dpg.add_scatter_series(
-                    x=[], y=[], label="Temp", parent="V_axis", tag="results_plot2"
+                    x=[], y=[], label="Temp2", parent="current_axis", tag="results_plot2"
                 )
 
                 

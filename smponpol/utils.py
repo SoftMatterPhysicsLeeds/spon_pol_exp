@@ -173,6 +173,11 @@ def handle_measurement_status(
         state.t_stable_start = time.time()
         state.measurement_status = Status.STABILISING_TEMPERATURE
 
+    elif state.measurement_status == Status.GOING_TO_TEMPERATURE:
+        dpg.set_value(
+            frontend.measurement_status, f"Going to {state.T_list[state.T_step]}°C\tT: {state.hotstage_temperature:.2f}°C"
+        )
+
     elif state.measurement_status == Status.STABILISING_TEMPERATURE:
         current_wait = time.time() - state.t_stable_start
         dpg.set_value(
@@ -191,7 +196,7 @@ def handle_measurement_status(
        
             dpg.set_value(
                 frontend.measurement_status,
-                f"Taking data\tT: {state.hotstage_temperature}°C"
+                f"Taking data\tT: {state.hotstage_temperature:.2f}°C"
             )
 
         
@@ -368,5 +373,7 @@ def parse_result(result: dict, state: lcd_state, frontend: lcd_ui, single_shot=F
 
     dpg.fit_axis_data('V_axis')
     dpg.fit_axis_data('time_axis')
+    dpg.fit_axis_data('current_axis')
+
 
 
