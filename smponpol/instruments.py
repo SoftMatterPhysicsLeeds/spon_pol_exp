@@ -290,12 +290,12 @@ class Instec:
             time.sleep(0.05)
     
 
-        int_list = list(response)
+        # int_list = list(response)
 
-        head_checksum_calculated = (int_list[0] + int_list[1] + int_list[2]) & 0xFF
-        data_checksum_calculated = (sum(int_list[4:-1])) & 0xFF
+        # head_checksum_calculated = (int_list[0] + int_list[1] + int_list[2]) & 0xFF
+        # data_checksum_calculated = (sum(int_list[4:-1])) & 0xFF
 
-        verify_checksum = head_checksum_calculated == int_list[3] and data_checksum_calculated == int_list[-1]    
+        # verify_checksum = head_checksum_calculated == int_list[3] and data_checksum_calculated == int_list[-1]    
 
         
         # if verify_checksum:
@@ -343,8 +343,9 @@ class Instec:
 
     def get_temperature(self):
 
-        
         response = self.read_register(4)
+        if response == b"":
+            return None
         # for some reason, the response to reading a register can be a 'hang-on' from the previous command... 
         # let's cheat and just ignore responses < 8 bytes and throw back the previous T instead.
         if len(response) >= 8:

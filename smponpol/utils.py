@@ -277,6 +277,8 @@ def read_temperature(frontend: lcd_ui, instruments: lcd_instruments, state: lcd_
     time_step = 0.05
     while True:
         temperature = instruments.hotstage.get_temperature()
+        if temperature is None:
+            continue
         
         state.hotstage_temperature = temperature
         dpg.set_value(
