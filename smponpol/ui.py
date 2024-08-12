@@ -505,7 +505,7 @@ def make_variable_list_frame(default_val, min_val, max_val, logspace=False):
                 ["Step Size", "Number of Points (Linear)", "Number of Points (Log)"],
                 default_value="Step Size",
             )
-            spacing_label = dpg.add_text("Number of Points:")
+            spacing_label = dpg.add_text("Step Size:")
             number_of_points_input = dpg.add_input_int(default_value=10)
             spacing_input = dpg.add_input_double(default_value=0.1)
             dpg.add_text("First Value:")
@@ -513,7 +513,7 @@ def make_variable_list_frame(default_val, min_val, max_val, logspace=False):
             dpg.add_text("Final Value:")
             max_value_input = dpg.add_input_double(default_value=max_val)
 
-            dpg.hide_item(spacing_input)
+            dpg.hide_item(number_of_points_input)
 
             dpg.configure_item(
                 spacing_combo,
