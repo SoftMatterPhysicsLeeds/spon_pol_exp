@@ -41,20 +41,11 @@ def start_measurement(
     state.T_list = [round(x, 2) for x in state.T_list]
 
 
-    # instruments.oscilloscope.set_timebase(dpg.get_value(frontend.timebase_input))
-    # instruments.oscilloscope.set_channel_vertical_range(1, dpg.get_value(frontend.vertical_range_input))
-    # instruments.oscilloscope.set_channel_vertical_range(2, dpg.get_value(frontend.vertical_range_input))
-
-    # instruments.agilent.set_waveform() # default is triangle
-    # instruments.agilent.set_voltage_unit() # default is VRMS
-    # instruments.agilent.set_output_load() # default is INF
+   
     instruments.agilent.set_voltage(dpg.get_value(frontend.voltage_input))
     instruments.agilent.set_frequency(dpg.get_value(frontend.frequency_input))
-    # instruments.agilent.set_symmetry()
-    instruments.agilent.set_output('ON')
-
-
-
+  
+    instruments.agilent.set_output('OFF')
 
     state.T_step = 0 
 
@@ -182,6 +173,11 @@ def handle_measurement_status(
         state.t_stable_start = time.time()
         state.measurement_status = Status.STABILISING_TEMPERATURE
 
+    elif state.measurement_status == Status.GOING_TO_TEMPERATURE:
+        dpg.set_value(
+            frontend.measurement_status, f"Going to {state.T_list[state.T_step]}°C\tT: {state.hotstage_temperature:.2f}°C"
+        )
+
     elif state.measurement_status == Status.STABILISING_TEMPERATURE:
         current_wait = time.time() - state.t_stable_start
         dpg.set_value(
@@ -200,7 +196,7 @@ def handle_measurement_status(
        
             dpg.set_value(
                 frontend.measurement_status,
-                f"Taking data\tT: {state.hotstage_temperature}°C"
+                f"Taking data\tT: {state.hotstage_temperature:.2f}°C"
             )
 
         
@@ -252,7 +248,9 @@ def run_experiment(frontend: lcd_ui, instruments: lcd_state, state: lcd_state, s
     
     result = dict()
 
-    time.sleep(2)
+    instruments.agilent.set_output('ON')
+
+    time.sleep(5)
 
 
     # depth = "10k"
@@ -265,6 +263,7 @@ def run_experiment(frontend: lcd_ui, instruments: lcd_state, state: lcd_state, s
     _, data2 =  instruments.oscilloscope.get_channel_trace(2)
 
     instruments.oscilloscope.run()
+    instruments.agilent.set_output('OFF')
 
     result["time"] = times
     result["channel1"] = data
@@ -278,6 +277,8 @@ def read_temperature(frontend: lcd_ui, instruments: lcd_instruments, state: lcd_
     time_step = 0.05
     while True:
         temperature = instruments.hotstage.get_temperature()
+        if temperature is None:
+            continue
         
         state.hotstage_temperature = temperature
         dpg.set_value(
@@ -301,8 +302,8 @@ def export_data_file(frontend: lcd_ui, state: lcd_state, result, single_shot=Fal
         times = result["time"]
         channel1 = result["channel1"]
         channel2 = result["channel2"]
-        output_filename = dpg.get_value(frontend.output_file_path).split('.json')[0] + f" {dpg.get_value(frontend.voltage_input)} Volts" + \
-            f" {dpg.get_value(frontend.frequency_input)} Hz" + \
+        output_filename = dpg.get_value(frontend.output_file_path).split('.json')[0] + f" {dpg.get_value(frontend.voltage_input):.2f} Volts" + \
+            f" {dpg.get_value(frontend.frequency_input):.1f} Hz" + \
             f" {state.hotstage_temperature:.2f} C.dat"
     else:
         T_str =f"{state.T_step + 1}: {state.T_list[state.T_step]}"
@@ -310,9 +311,9 @@ def export_data_file(frontend: lcd_ui, state: lcd_state, result, single_shot=Fal
         channel1 = state.resultsDict[T_str]["channel1"]
         channel2 = state.resultsDict[T_str]["channel2"]
 
-        output_filename = dpg.get_value(frontend.output_file_path).split('.json')[0] + f" {dpg.get_value(frontend.voltage_input)} Volts" + \
-            f" {dpg.get_value(frontend.frequency_input)} Hz" + \
-            f" {state.T_list[state.T_step]} C.dat"
+        output_filename = dpg.get_value(frontend.output_file_path).split('.json')[0] + f" {dpg.get_value(frontend.voltage_input):.2f} Volts" + \
+            f" {dpg.get_value(frontend.frequency_input):.1f} Hz" + \
+            f" {state.T_list[state.T_step]:.2f} C.dat"
 
     with open(output_filename, 'w') as f:
         f.write("time\tChannel1\tChannel2\n")
@@ -374,5 +375,7 @@ def parse_result(result: dict, state: lcd_state, frontend: lcd_ui, single_shot=F
 
     dpg.fit_axis_data('V_axis')
     dpg.fit_axis_data('time_axis')
+    dpg.fit_axis_data('current_axis')
+
 
 

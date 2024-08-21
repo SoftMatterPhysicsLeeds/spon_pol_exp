@@ -17,7 +17,8 @@ HEIGHT_DISCREPANCY = int(VIEWPORT_HEIGHT / VERTICAL_WIDGET_NUMBER)
 
 
 # TODO: 1) change initialise button for each equipment to one button for all (why do we care aboout individual things?).
-#       2) when searching for equipment, change the display value of the combo dropdown to the first available device because clicking is annoying. 
+#       2) when searching for equipment, change the display value of the combo dropdown to the first available device because clicking is annoying.
+
 
 class lcd_ui:
     def __init__(self):
@@ -27,6 +28,7 @@ class lcd_ui:
         self.oscilloscope_status = "Not Connected"
         self._make_control_window()
         self._make_graph_windows()
+        self._make_status_window()
         self.draw_children(VIEWPORT_WIDTH, DRAW_HEIGHT)
 
         with dpg.theme() as START_THEME:
@@ -48,52 +50,53 @@ class lcd_ui:
             self.results_graph, pos=[0, height / 2], width=width, height=height / 2
         )
 
-        height_mod = height / 2 - (height/2)/4
+        height_mod = height / 2 - (height / 2) / 4
+
+        dpg.configure_item(
+            self.status_window, pos=[0, 0], width=width, height=height / 8
+        )
+
         dpg.configure_item(
             self.control_window,
-            pos=[0, 0],
+            pos=[0, height / 8],
             width=width / 2,
-            height=height / 2,
+            height=height / 4 - height / 16,
         )
-        # dpg.configure_item(
-        #     self.wfg_settings_window,
-        #     pos=[0, height/4],
-        #     width=width / 2,
-        #     height=height/4,
-        # )
-        
+
         dpg.configure_item(
             self.temperature_list_window,
             width=width / 2,
-            height=height/4,
-            pos=[width / 2, 0],
+            height=height / 4 - height / 16,
+            pos=[0, height / 4 + height / 16],
         )
 
         dpg.configure_item(
             self.more_control_window,
-            pos = [width/2, height/4],
-            width=width/2,
-            height = height/8
+            pos=[width / 2, height / 8],
+            width=width / 2,
+            height=(3 * height / 8) / 2,
         )
 
         dpg.configure_item(
             self.start_stop_button_window,
-            pos=[width / 2, height_mod],
+            pos=[width / 2, height / 8 + (3 * height / 8) / 2],
             width=width / 2,
-            height=(height/4)/2,
+            height=(3 * height / 8) / 2,
         )
 
-
-        dpg.configure_item(self.autoscale_scope_button, width=width/4-10, height = -1)
-        dpg.configure_item(self.get_single_shot_button, width=width/4-10, height = -1)
+        dpg.configure_item(self.autoscale_scope_button, width=width / 4 - 10, height=-1)
+        dpg.configure_item(self.get_single_shot_button, width=width / 4 - 10, height=-1)
         dpg.configure_item(self.start_button, width=width / 4 - 10, height=-1)
         dpg.configure_item(self.stop_button, width=width / 4 - 10, height=-1)
         dpg.configure_item(self.results_plot_window, height=-1, width=-1)
 
-     
     def _make_graph_windows(self):
         with dpg.window(
-            label="Results", no_collapse=True, no_close=True, no_resize=True, no_title_bar=True
+            label="Results",
+            no_collapse=True,
+            no_close=True,
+            no_resize=True,
+            no_title_bar=True,
         ) as self.results_graph:
             with dpg.plot(
                 anti_aliased=True,
@@ -104,6 +107,10 @@ class lcd_ui:
                 self.results_V_axis = dpg.add_plot_axis(
                     dpg.mvYAxis, label="V", tag="V_axis"
                 )
+
+                self.results_current_axis = dpg.add_plot_axis(
+                    dpg.mvYAxis, label="I", tag="current_axis"
+                )
                 # series belong to a y axis. Note the tag name is used in the update
                 # function update_data
 
@@ -111,11 +118,28 @@ class lcd_ui:
                     x=[], y=[], label="Temp", parent="V_axis", tag="results_plot"
                 )
                 self.results_plot2 = dpg.add_scatter_series(
-                    x=[], y=[], label="Temp", parent="V_axis", tag="results_plot2"
+                    x=[],
+                    y=[],
+                    label="Temp2",
+                    parent="current_axis",
+                    tag="results_plot2",
                 )
 
-                
-        
+    def _make_status_window(self):
+        with dpg.window(
+            label="Status",
+            no_collapse=True,
+            no_close=True,
+            no_title_bar=True,
+            no_resize=True,
+        ) as self.status_window:
+            with dpg.group(tag="status_window"):
+                with dpg.group(horizontal=True):
+                    self.status_label = dpg.add_text("Status: ")
+                    self.measurement_status = dpg.add_text(
+                        f"{self.status}", tag="status_display"
+                    )
+
     def _make_control_window(self):
         with dpg.window(
             label="Status",
@@ -124,19 +148,12 @@ class lcd_ui:
             no_title_bar=True,
             no_resize=True,
         ) as self.control_window:
-            with dpg.group(tag="status_window"):
-                with dpg.group(horizontal=True):
-                    self.status_label = dpg.add_text("Status: ")
-                    self.measurement_status = dpg.add_text(
-                        f"{self.status}", tag="status_display"
-                    )
-
             with dpg.group() as self.init_instruments_group:
                 with dpg.table(header_row=False):
                     dpg.add_table_column()
                     dpg.add_table_column()
                     dpg.add_table_column()
-                    
+
                     with dpg.table_row():
                         dpg.add_text("Instec: ")
                         self.hotstage_status = dpg.add_text(
@@ -144,12 +161,12 @@ class lcd_ui:
                         )
 
                         self.hotstage_com_selector = dpg.add_combo(width=-1)
-                        
 
                     with dpg.table_row():
                         dpg.add_text("Agilent: ")
                         self.agilent_status = dpg.add_text(
-                            f"{self.agilent_status}", tag="waveformgenerator_status_display"
+                            f"{self.agilent_status}",
+                            tag="waveformgenerator_status_display",
                         )
 
                         self.agilent_com_selector = dpg.add_combo(width=-1)
@@ -160,7 +177,8 @@ class lcd_ui:
                     with dpg.table_row():
                         dpg.add_text("Rigol: ")
                         self.oscilloscope_status = dpg.add_text(
-                            f"{self.oscilloscope_status}", tag="oscilloscope_status_display"
+                            f"{self.oscilloscope_status}",
+                            tag="oscilloscope_status_display",
                         )
 
                         self.oscilloscope_com_selector = dpg.add_combo(width=-1)
@@ -169,8 +187,8 @@ class lcd_ui:
                         )
 
                 self.initialise_instruments = dpg.add_button(
-                        label="Initialise", width=-1
-                    )
+                    label="Initialise", width=-1
+                )
 
             with dpg.group(show=False) as self.output_controls_after_init_group:
                 self.wfg_title = dpg.add_text("Waveform Generator Settings")
@@ -182,12 +200,16 @@ class lcd_ui:
 
                     with dpg.table_row():
                         dpg.add_text("Voltage (V):")
-                        self.voltage_input = dpg.add_input_float(default_value=0.1, step_fast=1, step=0.1, width= -1)
+                        self.voltage_input = dpg.add_input_float(
+                            default_value=0.1, step_fast=1, step=0.1, width=-1
+                        )
                         dpg.add_text("Frequency (Hz):")
-                        self.frequency_input = dpg.add_input_float(default_value=1000, step_fast=100, step=100, width=-1)
+                        self.frequency_input = dpg.add_input_float(
+                            default_value=1000, step_fast=100, step=100, width=-1
+                        )
 
-                self.wfg_output_on_button = dpg.add_button(label = "Turn output on")
-                
+                self.wfg_output_on_button = dpg.add_button(label="Turn output on")
+
                 self.output_title = dpg.add_text("Output settings")
                 with dpg.table(header_row=False):
                     dpg.add_table_column()
@@ -206,15 +228,12 @@ class lcd_ui:
                             width=-1,
                         )
 
-                
-
-
             with dpg.window(
                 label="Temperature List",
                 no_collapse=True,
                 no_close=True,
                 no_resize=True,
-                no_title_bar=True
+                no_title_bar=True,
             ) as self.temperature_list_window:
                 with dpg.group(horizontal=True):
                     self.temperature_list = variable_list(
@@ -229,34 +248,42 @@ class lcd_ui:
                                     label="Go to (°C):"
                                 )
                                 self.go_to_temp_input = dpg.add_input_float(
-                                    default_value=25, width=100, step=0, step_fast=0, format="%.2f"
+                                    default_value=25,
+                                    width=100,
+                                    step=0,
+                                    step_fast=0,
+                                    format="%.2f",
                                 )
                             with dpg.table_row():
                                 dpg.add_text("Rate (°C/min): ")
                                 self.T_rate = dpg.add_input_double(
-                                    default_value=2, width=100, step=0, step_fast=0, format="%.1f"
+                                    default_value=2,
+                                    width=100,
+                                    step=0,
+                                    step_fast=0,
+                                    format="%.1f",
                                 )
                             with dpg.table_row():
                                 dpg.add_text("Stab. Time (s)")
                                 self.stab_time = dpg.add_input_double(
-                                    default_value=30, width=100, step=0, step_fast=0, format="%.2f"
+                                    default_value=30,
+                                    width=100,
+                                    step=0,
+                                    step_fast=0,
+                                    format="%.2f",
                                 )
 
-
-            with dpg.window(no_title_bar=True, no_resize=True) as self.more_control_window:
-                
+            with dpg.window(
+                no_title_bar=True, no_resize=True
+            ) as self.more_control_window:
                 with dpg.group(horizontal=True):
-                
                     self.autoscale_scope_button = dpg.add_button(
-                        label = "Autoscale scope"
+                        label="Autoscale scope"
                     )
 
                     self.get_single_shot_button = dpg.add_button(
-                        label = "Single measurement"
+                        label="Single measurement"
                     )
-                    
-
-
 
             with dpg.window(
                 no_title_bar=True, no_resize=True
@@ -388,7 +415,10 @@ def append_range_to_list_callback(sender, app_data, user_data):
                 dpg.get_value(user_data["range_selector"].min_value_input),
                 dpg.get_value(user_data["range_selector"].max_value_input)
                 + dpg.get_value(user_data["range_selector"].spacing_input),
-                dpg.get_value(user_data["range_selector"].spacing_input),
+                dpg.get_value(user_data["range_selector"].spacing_input)
+                if dpg.get_value(user_data["range_selector"].max_value_input)
+                > dpg.get_value(user_data["range_selector"].min_value_input)
+                else -1 * dpg.get_value(user_data["range_selector"].spacing_input),
             )
         )
 
@@ -429,7 +459,10 @@ def replace_list_callback(sender, app_data, user_data):
                 dpg.get_value(user_data["range_selector"].min_value_input),
                 dpg.get_value(user_data["range_selector"].max_value_input)
                 + dpg.get_value(user_data["range_selector"].spacing_input),
-                dpg.get_value(user_data["range_selector"].spacing_input),
+                dpg.get_value(user_data["range_selector"].spacing_input)
+                if dpg.get_value(user_data["range_selector"].max_value_input)
+                > dpg.get_value(user_data["range_selector"].min_value_input)
+                else -1 * dpg.get_value(user_data["range_selector"].spacing_input),
             )
         )
 
@@ -470,17 +503,17 @@ def make_variable_list_frame(default_val, min_val, max_val, logspace=False):
             dpg.add_text("Mode:")
             spacing_combo = dpg.add_combo(
                 ["Step Size", "Number of Points (Linear)", "Number of Points (Log)"],
-                default_value="Number of Points (Linear)",
+                default_value="Step Size",
             )
-            spacing_label = dpg.add_text("Number of Points:")
+            spacing_label = dpg.add_text("Step Size:")
             number_of_points_input = dpg.add_input_int(default_value=10)
             spacing_input = dpg.add_input_double(default_value=0.1)
-            dpg.add_text("Minimum Value:")
+            dpg.add_text("First Value:")
             min_value_input = dpg.add_input_double(default_value=min_val)
-            dpg.add_text("Maximum Value:")
+            dpg.add_text("Final Value:")
             max_value_input = dpg.add_input_double(default_value=max_val)
 
-            dpg.hide_item(spacing_input)
+            dpg.hide_item(number_of_points_input)
 
             dpg.configure_item(
                 spacing_combo,
