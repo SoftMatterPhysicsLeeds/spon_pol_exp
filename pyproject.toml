@@ -1,0 +1,16 @@
+[project]
+name = "smponpol"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "dearpygui>=1.11.1",
+    "numpy>=2.1.0",
+    "pyvisa>=1.14.1",
+    "xlsxwriter>=3.2.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
