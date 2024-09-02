@@ -317,6 +317,7 @@ def export_data_file(frontend: lcd_ui, state: lcd_state, result, single_shot=Fal
 
     with open(output_filename, 'w') as f:
         f.write("time\tChannel1\tChannel2\n")
+        f.write("Data\n")
         for time_inc, channel1_inc, channel2_inc in zip(times, channel1, channel2):
             f.write(f"{time_inc}\t{channel1_inc}\t{channel2_inc}\n")
 
