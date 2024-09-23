@@ -250,7 +250,7 @@ def run_experiment(frontend: lcd_ui, instruments: lcd_state, state: lcd_state, s
 
     instruments.agilent.set_output('ON')
 
-    time.sleep(5)
+    # time.sleep(5)
 
 
     # depth = "10k"
