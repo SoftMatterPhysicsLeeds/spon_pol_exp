@@ -241,6 +241,7 @@ class Rigol4204:
         self.scope.write(f"CHAN{channel}:SCAL {v_range}")
 
     def get_channel_trace(self, channel=1):
+        self.scope.write(":CLEAR")
         self.scope.write(":RUN")
         time.sleep(5)
         self.scope.write(":STOP")
@@ -249,7 +250,7 @@ class Rigol4204:
         self.scope.write(":WAV:FORM ASC;:WAV:MODE MAX")
         self.scope.write(":ACQuire:TYPE AVERages;:ACQ:AVER 64;")
         self.scope.write(":ACQ:MDEP 10k")
-        self.scope.write(":WAVeform:POINts 10000")
+        # self.scope.write(":WAVeform:POINts 10000")
         
         x_increment = float(self.scope.query("WAV:XINC?"))
         start_time = float(self.scope.query("WAV:XOR?"))
