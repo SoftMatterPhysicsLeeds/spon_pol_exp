@@ -190,7 +190,7 @@ class lcd_ui:
                     label="Initialise", width=-1
                 )
 
-            with dpg.group(show=False) as self.output_controls_after_init_group:
+            with dpg.group(show=True) as self.output_controls_after_init_group: ###### CHANGE BACK TO FALSE¬!!!!!
                 self.wfg_title = dpg.add_text("Waveform Generator Settings")
                 with dpg.table(header_row=False):
                     dpg.add_table_column()
@@ -207,8 +207,13 @@ class lcd_ui:
                         self.frequency_input = dpg.add_input_float(
                             default_value=1000, step_fast=100, step=100, width=-1
                         )
-
-                self.wfg_output_on_button = dpg.add_button(label="Turn output on")
+                    with dpg.table_row():
+                        dpg.add_text("Waveform:")
+                        self.selected_waveform = dpg.add_combo(
+                            ["Sine", "Square", "Triangle", "User"], default_value="Triangle"
+                        )
+                        self.wfg_output_on_button = dpg.add_button(label="Turn output on")
+            
 
                 self.output_title = dpg.add_text("Output settings")
                 with dpg.table(header_row=False):
