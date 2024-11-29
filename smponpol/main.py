@@ -88,20 +88,20 @@ def main():
         # Flip the state
         state = not state
 
-        match dpg.get_value(frontend.selected_waveform):
-            case "Sine":
-                waveform = "SIN"
-            case "Square":
-                waveform = "SQU"
-            case "Triangle":
-                waveform = "TRI"
-            case "User":
-                waveform = "USER"
 
         if state:
             instruments.agilent.set_output("OFF")
             dpg.configure_item(sender, label="Turn output on")
         else:
+            match dpg.get_value(frontend.selected_waveform):
+                case "Sine":
+                    waveform = "SIN"
+                case "Square":
+                    waveform = "SQU"
+                case "Triangle":
+                    waveform = "TRI"
+                case "User":
+                    waveform = "USER"
             instruments.set_waveform(waveform)
             instruments.agilent.set_output("ON")
             dpg.configure_item(sender, label="Turn output off")
