@@ -3,13 +3,15 @@ import threading
 import time
 import struct
 
+
 def write_handler(instrument, command_string):
     try:
         instrument.write(command_string)
         return None
     except Exception as e:
-        print(f"Could not write {command_string} to {instrument}: ",e) 
+        print(f"Could not write {command_string} to {instrument}: ", e)
         return e
+
 
 class LinkamHotstage:
     def __init__(self, address: str) -> None:
@@ -43,15 +45,15 @@ class LinkamHotstage:
     def set_temperature(self, T: float, rate: float = 20.0) -> None:
         if self.init:
             with self.lock:
-                self.link.write(f"R1{int(rate*100)}")  # type: ignore
+                self.link.write(f"R1{int(rate * 100)}")  # type: ignore
                 self.link.read()  # type: ignore
-                self.link.write(f"L1{int(T*10)}")  # type: ignore
+                self.link.write(f"L1{int(T * 10)}")  # type: ignore
                 self.link.read()  # type: ignore
         else:
             with self.lock:
-                self.link.write(f"R1{int(rate*100)}")  # type: ignore
+                self.link.write(f"R1{int(rate * 100)}")  # type: ignore
                 self.link.read()  # type: ignore
-                self.link.write(f"L1{int(T*10)}")  # type: ignore
+                self.link.write(f"L1{int(T * 10)}")  # type: ignore
                 self.link.read()  # type: ignore
                 self.link.write("S")  # type: ignore
                 self.link.read()
@@ -126,9 +128,8 @@ class Agilent33220A:
     def set_output_load(self, output="INF"):
         self.wfg.write(f":OUTP:LOAD {output}")
 
-    def set_symmetry(self, value = 50):
+    def set_symmetry(self, value=50):
         self.wfg.write(f":FUNCtion:RAMP:SYMMetry {value}")
-    
 
     def close(self):
         self.wfg.close()
@@ -166,7 +167,7 @@ class Rigol4204:
         self.set_trigger_mode()
         self.initialise_channel(1)
         self.initialise_channel(2)
-
+        self.initialise_channel(3)
 
     # Memory Depth options: 1k, 10k, 100k, 1M, 10M, 25M, 50M, 100M, 125M
     def autoscale(self):
@@ -175,7 +176,7 @@ class Rigol4204:
     def set_memory_depth(self, depth=10000):
         self.scope.write(f"ACQ:MDEP {depth}")
 
-    def set_timebase(self, base = 2e-6):
+    def set_timebase(self, base=2e-6):
         self.scope.write(f":TIMebase:SCALe {base}")
 
     # acqusition types: NORM, AVER, PEAK, HRES
@@ -187,7 +188,6 @@ class Rigol4204:
 
     def set_offset(self, offset=0.0):
         self.scope.write(f":TIM:OFFS {offset}")
-
 
     # Mode options: Main, XY, Roll
     def set_mode(self, mode="MAIN"):
@@ -220,7 +220,9 @@ class Rigol4204:
 
     # channel set up
 
-    def initialise_channel(self, channel=1, mode="AC", attenuation=1, offset=0.0, v_range=0.0):
+    def initialise_channel(
+        self, channel=1, mode="AC", attenuation=1, offset=0.0, v_range=0.0
+    ):
         self.set_channel_coupling_mode(channel, mode)
         self.set_channel_probe_attenuation(channel, attenuation)
         self.set_channel_vertical_offset(channel, offset)
@@ -251,20 +253,19 @@ class Rigol4204:
         self.scope.write(":ACQuire:TYPE AVERages;:ACQ:AVER 64;")
         self.scope.write(":ACQ:MDEP 10k")
         # self.scope.write(":WAVeform:POINts 10000")
-        
+
         x_increment = float(self.scope.query("WAV:XINC?"))
         start_time = float(self.scope.query("WAV:XOR?"))
 
         data = self.scope.query(":WAV:DATA?")
-        data = [float(x) for x in data.split(',')]
-        times = [start_time+(x_increment * x) for x in range(len(data))]
-
-        
+        data = [float(x) for x in data.split(",")]
+        times = [start_time + (x_increment * x) for x in range(len(data))]
 
         return times, data
 
     def close(self):
         self.scope.close()
+
 
 # operation order for RIGOL (from "Main_program_v1_18_RIGOL.vi"):
 # Connect
@@ -279,11 +280,7 @@ class Instec:
 
         self.T = 25.0
 
-
-
     def write_message(self, message):
-
-        
         with self.lock:
             time.sleep(0.05)
             self.stage.write_raw(message)
@@ -291,21 +288,18 @@ class Instec:
             self.stage.read_raw()
             response = self.stage.read_raw()
             time.sleep(0.05)
-    
 
         # int_list = list(response)
 
         # head_checksum_calculated = (int_list[0] + int_list[1] + int_list[2]) & 0xFF
         # data_checksum_calculated = (sum(int_list[4:-1])) & 0xFF
 
-        # verify_checksum = head_checksum_calculated == int_list[3] and data_checksum_calculated == int_list[-1]    
+        # verify_checksum = head_checksum_calculated == int_list[3] and data_checksum_calculated == int_list[-1]
 
-        
         # if verify_checksum:
         #     print("Valid response")
-        # else: 
+        # else:
         #     print("Invalid response")
-
 
         # if int_list[4] == 4:
         #     print("Command Successful")
@@ -314,21 +308,20 @@ class Instec:
 
         return response
 
-
     def write_register(self, register, input):
         head = b"\x7f\x01\x07"
-        checksum_1 =  bytes([sum(head) & 0xFF])
-        data = b"\x01" + register.to_bytes(1,'big') + b"\x04" + struct.pack('f', input)
+        checksum_1 = bytes([sum(head) & 0xFF])
+        data = b"\x01" + register.to_bytes(1, "big") + b"\x04" + struct.pack("f", input)
         checksum_2 = bytes([sum(data) & 0xFF])
 
         message = head + checksum_1 + data + checksum_2
 
         self.write_message(message)
-        
-    def exec_command(self,command):
+
+    def exec_command(self, command):
         head = b"\x7f\x01\x04"
-        checksum_1 =  bytes([sum(head) & 0xFF])
-        data = b"\x01\x01\x01" + command.to_bytes(1, 'big')
+        checksum_1 = bytes([sum(head) & 0xFF])
+        data = b"\x01\x01\x01" + command.to_bytes(1, "big")
         checksum_2 = bytes([sum(data) & 0xFF])
 
         message = head + checksum_1 + data + checksum_2
@@ -336,8 +329,8 @@ class Instec:
 
     def read_register(self, register):
         head = b"\x7f\x01\x03"
-        checksum_1 =  bytes([sum(head) & 0xFF])
-        data = b"\x02" + register.to_bytes(1,'big') + b"\x05"
+        checksum_1 = bytes([sum(head) & 0xFF])
+        data = b"\x02" + register.to_bytes(1, "big") + b"\x05"
         checksum_2 = bytes([sum(data) & 0xFF])
         message = head + checksum_1 + data + checksum_2
 
@@ -345,67 +338,75 @@ class Instec:
         return response
 
     def get_temperature(self):
-
         response = self.read_register(4)
         if response == b"":
             return None
-        # for some reason, the response to reading a register can be a 'hang-on' from the previous command... 
+        # for some reason, the response to reading a register can be a 'hang-on' from the previous command...
         # let's cheat and just ignore responses < 8 bytes and throw back the previous T instead.
         if len(response) >= 8:
-            self.T = struct.unpack('f',response[7:11])[0]
-        
+            self.T = struct.unpack("f", response[7:11])[0]
+
         return self.T
-   
+
     def reset(self):
-        self.exec_command(6) # 2 types of reset... this is for comm?
-    
+        self.exec_command(6)  # 2 types of reset... this is for comm?
+
     def pause(self):
         self.exec_command(3)
 
     def hold(self, T):
-        self.write_register(8, T) # set TF to T
-        self.exec_command(1) # Hold
+        self.write_register(8, T)  # set TF to T
+        self.exec_command(1)  # Hold
 
     def ramp(self, T, rate):
-        self.write_register(8, T) # set TF register to T
-        self.write_register(18, rate) #set rate register to rate 
-        self.exec_command(2) # Ramp
+        self.write_register(8, T)  # set TF register to T
+        self.write_register(18, rate)  # set rate register to rate
+        self.exec_command(2)  # Ramp
 
     def stop(self):
-        self.exec_command(5) # Stop
+        self.exec_command(5)  # Stop
 
     def interpret_response(self, byte_response):
         int_list = list(byte_response)
         response = {}
-        
-        response['head_flag'] = int_list[0]
-        response['slave_board_address'] = int_list[1]
-        response['data_length'] = int_list[2]
-        response['head_checksum'] = int_list[3]
-        response['action'] = int_list[4]
-        response['register_address'] = int_list[5]
-        response['register_structure_length'] = int_list[6]
-        
+
+        response["head_flag"] = int_list[0]
+        response["slave_board_address"] = int_list[1]
+        response["data_length"] = int_list[2]
+        response["head_checksum"] = int_list[3]
+        response["action"] = int_list[4]
+        response["register_address"] = int_list[5]
+        response["register_structure_length"] = int_list[6]
+
         # Extract the 5 bytes of register structure content
         register_structure_content = int_list[7:12]
-        response['register_structure_content'] = register_structure_content
+        response["register_structure_content"] = register_structure_content
 
         # Convert the first 4 bytes of the register structure content to a float
         temp_bytes = bytes(register_structure_content[:4])
-        response['temperature'] = struct.unpack('f', temp_bytes)[0]
+        response["temperature"] = struct.unpack("f", temp_bytes)[0]
 
         # Extract the remaining part of the register structure content
-        response['sensor_type'] = register_structure_content[4]
+        response["sensor_type"] = register_structure_content[4]
 
-        response['data_checksum'] = int_list[12]
-        response['additional_data'] = int_list[13:]
-        
+        response["data_checksum"] = int_list[12]
+        response["additional_data"] = int_list[13:]
+
         head_checksum_calculated = (int_list[0] + int_list[1] + int_list[2]) & 0xFF
-        data_checksum_calculated = (int_list[4] + int_list[5] + int_list[6] + int_list[7] + int_list[8] + int_list[9] + int_list[10] + int_list[11]) & 0xFF
-        
-        response['head_checksum_valid'] = head_checksum_calculated == int_list[3]
-        response['data_checksum_valid'] = data_checksum_calculated == int_list[12]
-        
+        data_checksum_calculated = (
+            int_list[4]
+            + int_list[5]
+            + int_list[6]
+            + int_list[7]
+            + int_list[8]
+            + int_list[9]
+            + int_list[10]
+            + int_list[11]
+        ) & 0xFF
+
+        response["head_checksum_valid"] = head_checksum_calculated == int_list[3]
+        response["data_checksum_valid"] = data_checksum_calculated == int_list[12]
+
         return response
 
     def close(self):

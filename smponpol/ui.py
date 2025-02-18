@@ -50,8 +50,6 @@ class lcd_ui:
             self.results_graph, pos=[0, height / 2], width=width, height=height / 2
         )
 
-        height_mod = height / 2 - (height / 2) / 4
-
         dpg.configure_item(
             self.status_window, pos=[0, 0], width=width, height=height / 8
         )
@@ -125,6 +123,14 @@ class lcd_ui:
                     tag="results_plot2",
                 )
 
+                self.results_plot3 = dpg.add_scatter_series(
+                    x=[],
+                    y=[],
+                    label="Temp3",
+                    parent="current_axis",
+                    tag="results_plot3",
+                )
+
     def _make_status_window(self):
         with dpg.window(
             label="Status",
@@ -190,7 +196,9 @@ class lcd_ui:
                     label="Initialise", width=-1
                 )
 
-            with dpg.group(show=True) as self.output_controls_after_init_group: ###### CHANGE BACK TO FALSE¬!!!!!
+            with (
+                dpg.group(show=True) as self.output_controls_after_init_group
+            ):  ###### CHANGE BACK TO FALSE¬!!!!!
                 self.wfg_title = dpg.add_text("Waveform Generator Settings")
                 with dpg.table(header_row=False):
                     dpg.add_table_column()
@@ -210,10 +218,12 @@ class lcd_ui:
                     with dpg.table_row():
                         dpg.add_text("Waveform:")
                         self.selected_waveform = dpg.add_combo(
-                            ["Sine", "Square", "Triangle", "User"], default_value="Triangle"
+                            ["Sine", "Square", "Triangle", "User"],
+                            default_value="Triangle",
                         )
-                        self.wfg_output_on_button = dpg.add_button(label="Turn output on")
-            
+                        self.wfg_output_on_button = dpg.add_button(
+                            label="Turn output on"
+                        )
 
                 self.output_title = dpg.add_text("Output settings")
                 with dpg.table(header_row=False):
@@ -372,7 +382,7 @@ def add_value_to_list_callback(sender, app_data, user_data):
     else:
         new_item_number = int(current_list[-1].split(":")[0]) + 1
     current_list.append(
-        f"{new_item_number}:\t{dpg.get_value(user_data["add_text"]):.2f}"
+        f"{new_item_number}:\t{dpg.get_value(user_data['add_text']):.2f}"
     )
     dpg.configure_item(user_data["listbox_handle"], items=current_list)
 
@@ -383,7 +393,7 @@ def del_value_from_list_callback(sender, app_data, user_data):
         return
     selected_item = dpg.get_value(user_data["listbox_handle"])
     current_list.remove(selected_item)
-    new_list = [f"{i+1}:{x.split(':')[1]}" for i, x in enumerate(current_list)]
+    new_list = [f"{i + 1}:{x.split(':')[1]}" for i, x in enumerate(current_list)]
     dpg.configure_item(user_data["listbox_handle"], items=new_list)
 
 
@@ -428,7 +438,7 @@ def append_range_to_list_callback(sender, app_data, user_data):
         )
 
     new_list = current_list + [
-        f"{i+1+len(current_list)}:\t{x:.2f}" for i, x in enumerate(values_to_add)
+        f"{i + 1 + len(current_list)}:\t{x:.2f}" for i, x in enumerate(values_to_add)
     ]
 
     dpg.configure_item(user_data["listbox_handle"], items=new_list)
@@ -471,7 +481,7 @@ def replace_list_callback(sender, app_data, user_data):
             )
         )
 
-    new_list_numbered = [f"{i+1}:\t{x:.2f}" for i, x in enumerate(values_to_add)]
+    new_list_numbered = [f"{i + 1}:\t{x:.2f}" for i, x in enumerate(values_to_add)]
 
     dpg.configure_item(user_data["listbox_handle"], items=new_list_numbered)
 

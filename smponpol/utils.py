@@ -62,6 +62,7 @@ def start_measurement(
     state.resultsDict[T_str]["time"] = []
     state.resultsDict[T_str]["channel1"] = []
     state.resultsDict[T_str]["channel2"] = []
+    state.resultsDict[T_str]["channel3"] = []
 
     state.measurement_status = Status.SET_TEMPERATURE
     state.xdata = []
@@ -268,6 +269,7 @@ def run_experiment(
 
     times, data = instruments.oscilloscope.get_channel_trace(1)
     _, data2 = instruments.oscilloscope.get_channel_trace(2)
+    _, data3 = instruments.oscilloscope.get_channel_trace(3)
 
     instruments.oscilloscope.run()
     instruments.agilent.set_output("OFF")
@@ -275,6 +277,7 @@ def run_experiment(
     result["time"] = times
     result["channel1"] = data
     result["channel2"] = data2
+    result["channel3"] = data3
 
     get_result(result, state, frontend, instruments, single_shot)
 
@@ -378,9 +381,11 @@ def parse_result(
         state.resultsDict[T_str]["time"] = result["time"]
         state.resultsDict[T_str]["channel1"] = result["channel1"]
         state.resultsDict[T_str]["channel2"] = result["channel2"]
+        state.resultsDict[T_str]["channel3"] = result["channel3"]
 
     dpg.set_value(frontend.results_plot, [result["time"], result["channel1"]])
     dpg.set_value(frontend.results_plot2, [result["time"], result["channel2"]])
+    dpg.set_value(frontend.results_plot3, [result["time"], result["channel3"]])
 
     dpg.fit_axis_data("V_axis")
     dpg.fit_axis_data("time_axis")
