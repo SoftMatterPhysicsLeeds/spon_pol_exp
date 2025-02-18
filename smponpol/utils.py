@@ -15,14 +15,12 @@ def write_handler(instrument, command_string):
     try:
         instrument.write(command_string)
     except Exception as e:
-        print(f"Could not write {command_string} to {instrument}: ",e) 
-
+        print(f"Could not write {command_string} to {instrument}: ", e)
 
 
 def start_measurement(
     state: lcd_state, frontend: lcd_ui, instruments: lcd_instruments
 ) -> None:
-
     dpg.configure_item(frontend.start_button, enabled=False)
     with dpg.theme() as DEACTIVATED_THEME:
         with dpg.theme_component(dpg.mvAll):
@@ -40,29 +38,39 @@ def start_measurement(
 
     state.T_list = [round(x, 2) for x in state.T_list]
 
-
-   
     instruments.agilent.set_voltage(dpg.get_value(frontend.voltage_input))
     instruments.agilent.set_frequency(dpg.get_value(frontend.frequency_input))
-  
-    instruments.agilent.set_output('OFF')
 
-    state.T_step = 0 
+    match dpg.get_value(frontend.selected_waveform):
+        case "Sine":
+            waveform = "SIN"
+        case "Square":
+            waveform = "SQU"
+        case "Triangle":
+            waveform = "TRI"
+        case "User":
+            waveform = "USER"
+    instruments.agilent.set_waveform(waveform)
 
-    T_str =f"{state.T_step + 1}: {state.T_list[state.T_step]}"
+    instruments.agilent.set_output("OFF")
+
+    state.T_step = 0
+
+    T_str = f"{state.T_step + 1}: {state.T_list[state.T_step]}"
 
     state.resultsDict[T_str] = dict()
     state.resultsDict[T_str]["time"] = []
     state.resultsDict[T_str]["channel1"] = []
     state.resultsDict[T_str]["channel2"] = []
-    
 
     state.measurement_status = Status.SET_TEMPERATURE
     state.xdata = []
     state.ydata = []
 
 
-def stop_measurement(instruments: lcd_instruments, state: lcd_state, frontend: lcd_ui) -> None:
+def stop_measurement(
+    instruments: lcd_instruments, state: lcd_state, frontend: lcd_ui
+) -> None:
     instruments.hotstage.stop()
     state.measurement_status = Status.IDLE
 
@@ -79,19 +87,23 @@ def init_agilent(
     instruments.agilent = agilent
     state.agilent_connection_status = "Connected"
 
+
 def init_oscilloscope(
     frontend: lcd_ui, instruments: lcd_instruments, state: lcd_state
 ) -> None:
     if instruments.oscilloscope:
         instruments.oscilloscope.close()
 
-    instruments.oscilloscope = Rigol4204(dpg.get_value(frontend.oscilloscope_com_selector))
+    instruments.oscilloscope = Rigol4204(
+        dpg.get_value(frontend.oscilloscope_com_selector)
+    )
     dpg.set_value(frontend.oscilloscope_status, "Connected")
     # dpg.configure_item(frontend.oscilloscope_initialise, label = "Reconnect")
-    
+
     state.oscilloscope_connection_status = "Connected"
     # oscilloscope.write(":AUToscale")
     # instruments.oscilloscope.init_scope_defaults()
+
 
 def init_hotstage(
     frontend: lcd_ui, instruments: lcd_instruments, state: lcd_state
@@ -110,17 +122,14 @@ def init_hotstage(
         dpg.set_value(frontend.hotstage_status, "Couldn't connect")
 
 
-
 def connect_to_instruments_callback(sender, app_data, user_data):
-
     hotstage_thread = threading.Thread(
-            target=init_hotstage,
-            args=(user_data["frontend"], user_data["instruments"], user_data["state"]),
-        )
-    
+        target=init_hotstage,
+        args=(user_data["frontend"], user_data["instruments"], user_data["state"]),
+    )
+
     hotstage_thread.daemon = True
     hotstage_thread.start()
-    
 
     agilent_thread = threading.Thread(
         target=init_agilent,
@@ -129,9 +138,7 @@ def connect_to_instruments_callback(sender, app_data, user_data):
 
     agilent_thread.daemon = True
     agilent_thread.start()
-    
 
-    
     oscilloscope_thread = threading.Thread(
         target=init_oscilloscope,
         args=(user_data["frontend"], user_data["instruments"], user_data["state"]),
@@ -139,9 +146,6 @@ def connect_to_instruments_callback(sender, app_data, user_data):
 
     oscilloscope_thread.daemon = True
     oscilloscope_thread.start()
-    
-
-    
 
 
 def handle_measurement_status(
@@ -149,7 +153,9 @@ def handle_measurement_status(
 ):
     current_wait = 0
     if state.measurement_status == Status.IDLE:
-        dpg.set_value(frontend.measurement_status, f"Idle\tT: {state.hotstage_temperature:.2f}°C")
+        dpg.set_value(
+            frontend.measurement_status, f"Idle\tT: {state.hotstage_temperature:.2f}°C"
+        )
         dpg.configure_item(frontend.start_button, enabled=True)
 
         with dpg.theme() as START_THEME:
@@ -158,13 +164,14 @@ def handle_measurement_status(
                     dpg.mvThemeCol_Button, (0, 100, 0), category=dpg.mvThemeCat_Core
                 )
         dpg.bind_item_theme(frontend.start_button, START_THEME)
-    elif state.measurement_status == Status.SET_TEMPERATURE: 
+    elif state.measurement_status == Status.SET_TEMPERATURE:
         instruments.hotstage.ramp(
             state.T_list[state.T_step], dpg.get_value(frontend.T_rate)
         )
         state.measurement_status = Status.GOING_TO_TEMPERATURE
         dpg.set_value(
-            frontend.measurement_status, f"Going to {state.T_list[state.T_step]}°C\tT: {state.hotstage_temperature:.2f}°C"
+            frontend.measurement_status,
+            f"Going to {state.T_list[state.T_step]}°C\tT: {state.hotstage_temperature:.2f}°C",
         )
     elif state.measurement_status == Status.GOING_TO_TEMPERATURE and (
         state.hotstage_temperature > state.T_list[state.T_step] - 0.1
@@ -175,7 +182,8 @@ def handle_measurement_status(
 
     elif state.measurement_status == Status.GOING_TO_TEMPERATURE:
         dpg.set_value(
-            frontend.measurement_status, f"Going to {state.T_list[state.T_step]}°C\tT: {state.hotstage_temperature:.2f}°C"
+            frontend.measurement_status,
+            f"Going to {state.T_list[state.T_step]}°C\tT: {state.hotstage_temperature:.2f}°C",
         )
 
     elif state.measurement_status == Status.STABILISING_TEMPERATURE:
@@ -192,27 +200,24 @@ def handle_measurement_status(
         take_data(frontend, instruments, state)
 
     elif state.measurement_status == Status.COLLECTING_DATA:
-
-       
-            dpg.set_value(
-                frontend.measurement_status,
-                f"Taking data\tT: {state.hotstage_temperature:.2f}°C"
-            )
-
-        
+        dpg.set_value(
+            frontend.measurement_status,
+            f"Taking data\tT: {state.hotstage_temperature:.2f}°C",
+        )
 
     elif state.measurement_status == Status.FINISHED:
         instruments.hotstage.stop()
-        instruments.agilent.set_output('OFF')
+        instruments.agilent.set_output("OFF")
         state.measurement_status = Status.IDLE
-        dpg.set_value(frontend.measurement_status, f"Idle\tT: {state.hotstage_temperature:.2f}°C")
+        dpg.set_value(
+            frontend.measurement_status, f"Idle\tT: {state.hotstage_temperature:.2f}°C"
+        )
 
 
 def find_instruments(frontend: lcd_ui):
     dpg.set_value(frontend.measurement_status, "Finding Instruments...")
     rm = pyvisa.ResourceManager()
-    visa_resources = rm.list_resources('?*')
-    
+    visa_resources = rm.list_resources("?*")
 
     usb_selector = [x for x in visa_resources if x.split("::")[0] == "USB0"]
 
@@ -224,16 +229,25 @@ def find_instruments(frontend: lcd_ui):
     dpg.configure_item(frontend.agilent_com_selector, items=agilent_addresses)
     dpg.configure_item(frontend.oscilloscope_com_selector, items=rigol_addresses)
 
-    dpg.set_value(frontend.hotstage_com_selector, instec_addresses[0] if (len(instec_addresses) > 0)  else "")
-    dpg.set_value(frontend.agilent_com_selector,agilent_addresses[0] if len(agilent_addresses)> 0 else "")
-    dpg.set_value(frontend.oscilloscope_com_selector,rigol_addresses[0] if len(rigol_addresses) > 0 else "")
+    dpg.set_value(
+        frontend.hotstage_com_selector,
+        instec_addresses[0] if (len(instec_addresses) > 0) else "",
+    )
+    dpg.set_value(
+        frontend.agilent_com_selector,
+        agilent_addresses[0] if len(agilent_addresses) > 0 else "",
+    )
+    dpg.set_value(
+        frontend.oscilloscope_com_selector,
+        rigol_addresses[0] if len(rigol_addresses) > 0 else "",
+    )
 
     dpg.set_value(frontend.measurement_status, "Found instruments!")
     dpg.set_value(frontend.measurement_status, "Idle")
 
 
 def take_data(
-    frontend: lcd_ui, instruments: lcd_instruments, state: lcd_state, single_shot = False
+    frontend: lcd_ui, instruments: lcd_instruments, state: lcd_state, single_shot=False
 ) -> None:
     thread = threading.Thread(
         target=run_experiment, args=(frontend, instruments, state, single_shot)
@@ -242,34 +256,27 @@ def take_data(
     thread.start()
 
 
-def run_experiment(frontend: lcd_ui, instruments: lcd_state, state: lcd_state, single_shot = False):
+def run_experiment(
+    frontend: lcd_ui, instruments: lcd_state, state: lcd_state, single_shot=False
+):
     if single_shot:
         state.measurement_status = Status.COLLECTING_DATA
-    
+
     result = dict()
 
-    instruments.agilent.set_output('ON')
-
-    # time.sleep(5)
-
-
-    # depth = "10k"
-    # averages = 64
-    
-    # instruments.oscilloscope.initialise_channel(channel=1)
-    # instruments.oscilloscope.initialise_channel(channel=2)
+    instruments.agilent.set_output("ON")
 
     times, data = instruments.oscilloscope.get_channel_trace(1)
-    _, data2 =  instruments.oscilloscope.get_channel_trace(2)
+    _, data2 = instruments.oscilloscope.get_channel_trace(2)
 
     instruments.oscilloscope.run()
-    instruments.agilent.set_output('OFF')
+    instruments.agilent.set_output("OFF")
 
     result["time"] = times
     result["channel1"] = data
     result["channel2"] = data2
-    
-    get_result(result, state, frontend, instruments, single_shot) 
+
+    get_result(result, state, frontend, instruments, single_shot)
 
 
 def read_temperature(frontend: lcd_ui, instruments: lcd_instruments, state: lcd_state):
@@ -279,11 +286,9 @@ def read_temperature(frontend: lcd_ui, instruments: lcd_instruments, state: lcd_
         temperature = instruments.hotstage.get_temperature()
         if temperature is None:
             continue
-        
+
         state.hotstage_temperature = temperature
-        dpg.set_value(
-            frontend.hotstage_status, f"T: {temperature:.2f}"
-        )
+        dpg.set_value(frontend.hotstage_status, f"T: {temperature:.2f}")
         state.T_log_time.append(log_time)
         state.T_log_T.append(temperature)
 
@@ -298,31 +303,41 @@ def read_temperature(frontend: lcd_ui, instruments: lcd_instruments, state: lcd_
 
 def export_data_file(frontend: lcd_ui, state: lcd_state, result, single_shot=False):
     if single_shot:
-        
         times = result["time"]
         channel1 = result["channel1"]
         channel2 = result["channel2"]
-        output_filename = dpg.get_value(frontend.output_file_path).split('.json')[0] + f" {dpg.get_value(frontend.voltage_input):.2f} Volts" + \
-            f" {dpg.get_value(frontend.frequency_input):.1f} Hz" + \
-            f" {state.hotstage_temperature:.2f} C.dat"
+        output_filename = (
+            dpg.get_value(frontend.output_file_path).split(".json")[0]
+            + f" {dpg.get_value(frontend.voltage_input):.2f} Volts"
+            + f" {dpg.get_value(frontend.frequency_input):.1f} Hz"
+            + f" {state.hotstage_temperature:.2f} C.dat"
+        )
     else:
-        T_str =f"{state.T_step + 1}: {state.T_list[state.T_step]}"
+        T_str = f"{state.T_step + 1}: {state.T_list[state.T_step]}"
         times = state.resultsDict[T_str]["time"]
         channel1 = state.resultsDict[T_str]["channel1"]
         channel2 = state.resultsDict[T_str]["channel2"]
 
-        output_filename = dpg.get_value(frontend.output_file_path).split('.json')[0] + f" {dpg.get_value(frontend.voltage_input):.2f} Volts" + \
-            f" {dpg.get_value(frontend.frequency_input):.1f} Hz" + \
-            f" {state.T_list[state.T_step]:.2f} C.dat"
+        output_filename = (
+            dpg.get_value(frontend.output_file_path).split(".json")[0]
+            + f" {dpg.get_value(frontend.voltage_input):.2f} Volts"
+            + f" {dpg.get_value(frontend.frequency_input):.1f} Hz"
+            + f" {state.T_list[state.T_step]:.2f} C.dat"
+        )
 
-    with open(output_filename, 'w') as f:
+    with open(output_filename, "w") as f:
         f.write("time\tChannel1\tChannel2\n")
         f.write("Data\n")
         for time_inc, channel1_inc, channel2_inc in zip(times, channel1, channel2):
             f.write(f"{time_inc}\t{channel1_inc}\t{channel2_inc}\n")
 
+
 def get_result(
-    result: dict, state: lcd_state, frontend: lcd_ui, instruments: lcd_instruments, single_shot=False
+    result: dict,
+    state: lcd_state,
+    frontend: lcd_ui,
+    instruments: lcd_instruments,
+    single_shot=False,
 ) -> None:
     parse_result(result, state, frontend, single_shot)
 
@@ -330,9 +345,6 @@ def get_result(
         pass
 
     else:
-        
-        
-
         with open(dpg.get_value(frontend.output_file_path), "w") as write_file:
             json.dump(state.resultsDict, write_file, indent=4)
 
@@ -342,41 +354,34 @@ def get_result(
             state.measurement_status = Status.IDLE
             dpg.set_value(frontend.measurement_status, "Idle")
 
-
-        if not single_shot:   
-            if (
-                state.T_step == len(state.T_list) - 1
-                
-            ):
+        if not single_shot:
+            if state.T_step == len(state.T_list) - 1:
                 state.measurement_status = Status.FINISHED
 
             else:
                 state.T_step += 1
-                T_str =f"{state.T_step + 1}: {state.T_list[state.T_step]}"
+                T_str = f"{state.T_step + 1}: {state.T_list[state.T_step]}"
 
                 state.resultsDict[T_str] = dict()
                 state.resultsDict[T_str]["time"] = []
                 state.resultsDict[T_str]["channel1"] = []
                 state.resultsDict[T_str]["channel2"] = []
-                
+
                 state.measurement_status = Status.SET_TEMPERATURE
 
 
-def parse_result(result: dict, state: lcd_state, frontend: lcd_ui, single_shot=False) -> None:
+def parse_result(
+    result: dict, state: lcd_state, frontend: lcd_ui, single_shot=False
+) -> None:
     if not single_shot:
-    
-        T_str =f"{state.T_step + 1}: {state.T_list[state.T_step]}"
+        T_str = f"{state.T_step + 1}: {state.T_list[state.T_step]}"
         state.resultsDict[T_str]["time"] = result["time"]
         state.resultsDict[T_str]["channel1"] = result["channel1"]
         state.resultsDict[T_str]["channel2"] = result["channel2"]
 
-
     dpg.set_value(frontend.results_plot, [result["time"], result["channel1"]])
     dpg.set_value(frontend.results_plot2, [result["time"], result["channel2"]])
 
-    dpg.fit_axis_data('V_axis')
-    dpg.fit_axis_data('time_axis')
-    dpg.fit_axis_data('current_axis')
-
-
-
+    dpg.fit_axis_data("V_axis")
+    dpg.fit_axis_data("time_axis")
+    dpg.fit_axis_data("current_axis")
