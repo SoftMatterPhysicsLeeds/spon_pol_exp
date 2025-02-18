@@ -1,7 +1,6 @@
 import dearpygui.dearpygui as dpg
 from smponpol.ui import lcd_ui
-from smponpol.excel_writer import make_excel
-from smponpol.dataclasses import lcd_instruments, lcd_state, Status, OutputType
+from smponpol.dataclasses import lcd_instruments, lcd_state, Status
 from smponpol.instruments import Agilent33220A, Instec, Rigol4204
 import json
 import pyvisa
