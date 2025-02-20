@@ -7,7 +7,7 @@ from smponpol.utils import (
     connect_to_instruments_callback,
     start_measurement,
     stop_measurement,
-    take_data
+    take_data,
 )
 from smponpol.themes import generate_global_theme
 import dearpygui.dearpygui as dpg
@@ -29,7 +29,10 @@ def main():
     ctypes.windll.shcore.SetProcessDpiAwareness(2)
     MODULE_PATH = importlib.resources.files(__package__)
     dpg.create_viewport(
-        title="SMPontaneous Polarisation", width=VIEWPORT_WIDTH, height=DRAW_HEIGHT
+        title="SMPontaneous Polarisation",
+        width=VIEWPORT_WIDTH,
+        height=DRAW_HEIGHT,
+        y_pos=50,
     )
 
     dpg.set_viewport_large_icon(MODULE_PATH / "assets/LCD_icon.ico")
@@ -51,8 +54,6 @@ def main():
     frontend = lcd_ui()
     instruments = lcd_instruments()
 
-    
-
     dpg.bind_item_font(frontend.wfg_title, title_font)
     # dpg.bind_item_font(frontend.scope_title, title_font)
     dpg.bind_item_font(frontend.output_title, title_font)
@@ -63,7 +64,6 @@ def main():
     dpg.bind_item_font(frontend.stop_button, status_font)
     dpg.bind_item_font(frontend.autoscale_scope_button, status_font)
     dpg.bind_item_font(frontend.get_single_shot_button, status_font)
-
 
     # configure output button
 
@@ -87,7 +87,6 @@ def main():
         state, enabled_theme, disabled_theme, instruments, frontend = user_data
         # Flip the state
         state = not state
-
 
         if state:
             instruments.agilent.set_output("OFF")
@@ -113,8 +112,20 @@ def main():
             sender, (state, enabled_theme, disabled_theme, instruments, frontend)
         )
 
-    dpg.configure_item(frontend.voltage_input, callback = lambda: instruments.agilent.set_voltage(dpg.get_value(frontend.voltage_input)), on_enter = True)
-    dpg.configure_item(frontend.frequency_input, callback = lambda: instruments.agilent.set_frequency(dpg.get_value(frontend.frequency_input)),on_enter = True)
+    dpg.configure_item(
+        frontend.voltage_input,
+        callback=lambda: instruments.agilent.set_voltage(
+            dpg.get_value(frontend.voltage_input)
+        ),
+        on_enter=True,
+    )
+    dpg.configure_item(
+        frontend.frequency_input,
+        callback=lambda: instruments.agilent.set_frequency(
+            dpg.get_value(frontend.frequency_input)
+        ),
+        on_enter=True,
+    )
 
     # - Create the button, assign the callback function, and assign the initial state (e.g. True) and the themes as user_data
     # dpg.add_button(label="Some label", callback=button_callback, user_data=(True, enabled_theme, disabled_theme,))
@@ -153,12 +164,12 @@ def main():
 
     dpg.configure_item(
         frontend.autoscale_scope_button,
-        callback = lambda: instruments.oscilloscope.autoscale()
+        callback=lambda: instruments.oscilloscope.autoscale(),
     )
 
     dpg.configure_item(
         frontend.get_single_shot_button,
-        callback = lambda: take_data(frontend, instruments, state, True) 
+        callback=lambda: take_data(frontend, instruments, state, True),
     )
 
     dpg.bind_theme(generate_global_theme())
@@ -215,8 +226,6 @@ def main():
         instruments.oscilloscope.close()
 
     dpg.destroy_context()
-
-    
 
 
 if __name__ == "__main__":

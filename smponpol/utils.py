@@ -35,9 +35,14 @@ def start_measurement(
         ]
     ]
 
+    state.voltage_list = [
+        float(x.split("\t")[-1])
+        for x in dpg.get_item_configuration(frontend.volt_list.list_handle)["items"]
+    ]
+
     state.T_list = [round(x, 2) for x in state.T_list]
 
-    instruments.agilent.set_voltage(dpg.get_value(frontend.voltage_input))
+    # instruments.agilent.set_voltage(dpg.get_value(frontend.voltage_input))
     instruments.agilent.set_frequency(dpg.get_value(frontend.frequency_input))
 
     match dpg.get_value(frontend.selected_waveform):
@@ -54,14 +59,17 @@ def start_measurement(
     instruments.agilent.set_output("OFF")
 
     state.T_step = 0
+    state.voltage_step = 0
 
     T_str = f"{state.T_step + 1}: {state.T_list[state.T_step]}"
+    v_str = f"{state.voltage_step + 1: {state.voltage_list[state.voltage_step]}}"
 
     state.resultsDict[T_str] = dict()
-    state.resultsDict[T_str]["time"] = []
-    state.resultsDict[T_str]["channel1"] = []
-    state.resultsDict[T_str]["channel2"] = []
-    state.resultsDict[T_str]["channel3"] = []
+    state.resultsDict[T_str][v_str] = dict()
+    state.resultsDict[T_str][v_str]["time"] = []
+    state.resultsDict[T_str][v_str]["channel1"] = []
+    state.resultsDict[T_str][v_str]["channel2"] = []
+    state.resultsDict[T_str][v_str]["channel3"] = []
 
     state.measurement_status = Status.SET_TEMPERATURE
     state.xdata = []
@@ -147,11 +155,15 @@ def connect_to_instruments_callback(sender, app_data, user_data):
     oscilloscope_thread.daemon = True
     oscilloscope_thread.start()
 
+    dpg.hide_item(user_data["frontend"].init_instruments_group)
+    dpg.show_item(user_data["frontend"].output_controls_after_init_group)
+
 
 def handle_measurement_status(
     state: lcd_state, frontend: lcd_ui, instruments: lcd_instruments
 ):
     current_wait = 0
+
     if state.measurement_status == Status.IDLE:
         dpg.set_value(
             frontend.measurement_status, f"Idle\tT: {state.hotstage_temperature:.2f}°C"
@@ -263,7 +275,7 @@ def run_experiment(
         state.measurement_status = Status.COLLECTING_DATA
 
     result = dict()
-
+    instruments.agilent.set_voltage(state.voltage_list[state.voltage_step])
     instruments.agilent.set_output("ON")
 
     times, data = instruments.oscilloscope.get_channel_trace(1)
@@ -316,22 +328,26 @@ def export_data_file(frontend: lcd_ui, state: lcd_state, result, single_shot=Fal
         )
     else:
         T_str = f"{state.T_step + 1}: {state.T_list[state.T_step]}"
-        times = state.resultsDict[T_str]["time"]
-        channel1 = state.resultsDict[T_str]["channel1"]
-        channel2 = state.resultsDict[T_str]["channel2"]
+        v_str = f"{state.voltage_step + 1: {state.voltage_list[state.voltage_step]}}"
+        times = state.resultsDict[T_str][v_str]["time"]
+        channel1 = state.resultsDict[T_str][v_str]["channel1"]
+        channel2 = state.resultsDict[T_str][v_str]["channel2"]
+        channel3 = state.resultsDict[T_str][v_str]["channel3"]
 
         output_filename = (
             dpg.get_value(frontend.output_file_path).split(".json")[0]
-            + f" {dpg.get_value(frontend.voltage_input):.2f} Volts"
+            + f" {dpg.get_value(state.voltage_list[state.voltage_step]):.2f} Volts"
             + f" {dpg.get_value(frontend.frequency_input):.1f} Hz"
             + f" {state.T_list[state.T_step]:.2f} C.dat"
         )
 
     with open(output_filename, "w") as f:
-        f.write("time\tChannel1\tChannel2\n")
+        f.write("time\tChannel1\tChannel2\tChannel3\n")
         f.write("Data\n")
-        for time_inc, channel1_inc, channel2_inc in zip(times, channel1, channel2):
-            f.write(f"{time_inc}\t{channel1_inc}\t{channel2_inc}\n")
+        for time_inc, channel1_inc, channel2_inc, channel3_inc in zip(
+            times, channel1, channel2, channel3
+        ):
+            f.write(f"{time_inc}\t{channel1_inc}\t{channel2_inc}\t{channel3_inc}\n")
 
 
 def get_result(
@@ -357,17 +373,35 @@ def get_result(
             dpg.set_value(frontend.measurement_status, "Idle")
 
         if not single_shot:
-            if state.T_step == len(state.T_list) - 1:
+            if (
+                state.T_step == len(state.T_list) - 1
+                and state.voltage_step == len(state.voltage_list) - 1
+            ):
                 state.measurement_status = Status.FINISHED
-
-            else:
+            elif state.voltage_step == len(state.voltage_list) - 1:
                 state.T_step += 1
                 T_str = f"{state.T_step + 1}: {state.T_list[state.T_step]}"
+                v_str = f"{state.voltage_step + 1: {state.voltage_list[state.voltage_step]}}"
+                state.resultsDict[T_str][v_str] = dict()
+                state.resultsDict[T_str][v_str]["time"] = []
+                state.resultsDict[T_str][v_str]["channel1"] = []
+                state.resultsDict[T_str][v_str]["channel2"] = []
+                state.resultsDict[T_str][v_str]["channel3"] = []
+
+                state.measurement_status = Status.TEMPERATURE_STABILISED
+
+            else:
+                # state.T_step += 1
+                state.voltage_step += 1
+                T_str = f"{state.T_step + 1}: {state.T_list[state.T_step]}"
+                v_str = f"{state.voltage_step + 1: {state.voltage_list[state.voltage_step]}}"
 
                 state.resultsDict[T_str] = dict()
-                state.resultsDict[T_str]["time"] = []
-                state.resultsDict[T_str]["channel1"] = []
-                state.resultsDict[T_str]["channel2"] = []
+                state.resultsDict[T_str][v_str] = dict()
+                state.resultsDict[T_str][v_str]["time"] = []
+                state.resultsDict[T_str][v_str]["channel1"] = []
+                state.resultsDict[T_str][v_str]["channel2"] = []
+                state.resultsDict[T_str][v_str]["channel3"] = []
 
                 state.measurement_status = Status.SET_TEMPERATURE
 
@@ -377,10 +411,11 @@ def parse_result(
 ) -> None:
     if not single_shot:
         T_str = f"{state.T_step + 1}: {state.T_list[state.T_step]}"
-        state.resultsDict[T_str]["time"] = result["time"]
-        state.resultsDict[T_str]["channel1"] = result["channel1"]
-        state.resultsDict[T_str]["channel2"] = result["channel2"]
-        state.resultsDict[T_str]["channel3"] = result["channel3"]
+        v_str = f"{state.voltage_step + 1: {state.voltage_list[state.voltage_step]}}"
+        state.resultsDict[T_str][v_str]["time"] = result["time"]
+        state.resultsDict[T_str][v_str]["channel1"] = result["channel1"]
+        state.resultsDict[T_str][v_str]["channel2"] = result["channel2"]
+        state.resultsDict[T_str][v_str]["channel3"] = result["channel3"]
 
     dpg.set_value(frontend.results_plot, [result["time"], result["channel1"]])
     dpg.set_value(frontend.results_plot2, [result["time"], result["channel2"]])

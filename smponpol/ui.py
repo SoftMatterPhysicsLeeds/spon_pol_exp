@@ -10,14 +10,10 @@ import json
 
 
 VIEWPORT_WIDTH = 1280
-DRAW_HEIGHT = 850  # titlebar is approximately 40px
+DRAW_HEIGHT = 1000  # titlebar is approximately 40px
 VIEWPORT_HEIGHT = DRAW_HEIGHT - 40
 VERTICAL_WIDGET_NUMBER = 4
 HEIGHT_DISCREPANCY = int(VIEWPORT_HEIGHT / VERTICAL_WIDGET_NUMBER)
-
-
-# TODO: 1) change initialise button for each equipment to one button for all (why do we care aboout individual things?).
-#       2) when searching for equipment, change the display value of the combo dropdown to the first available device because clicking is annoying.
 
 
 class lcd_ui:
@@ -51,35 +47,45 @@ class lcd_ui:
         )
 
         dpg.configure_item(
-            self.status_window, pos=[0, 0], width=width, height=height / 8
+            self.status_window,
+            pos=[0, 0],
+            width=width / 2,
+            height=height / 10,
         )
 
         dpg.configure_item(
             self.control_window,
-            pos=[0, height / 8],
+            pos=[width / 2, 0],
             width=width / 2,
-            height=height / 4 - height / 16,
+            height=height / 4,
+        )
+
+        dpg.configure_item(
+            self.voltage_list_window,
+            width=width / 2,
+            height=2 / 5 * height / 2,
+            pos=[0, 1 / 5 * height / 2],
         )
 
         dpg.configure_item(
             self.temperature_list_window,
             width=width / 2,
-            height=height / 4 - height / 16,
-            pos=[0, height / 4 + height / 16],
+            height=2 / 5 * height / 2,
+            pos=[0, 3 / 5 * height / 2],
         )
 
         dpg.configure_item(
             self.more_control_window,
-            pos=[width / 2, height / 8],
+            pos=[width / 2, height / 4],
             width=width / 2,
-            height=(3 * height / 8) / 2,
+            height=1 / 4 * height / 2,
         )
 
         dpg.configure_item(
             self.start_stop_button_window,
-            pos=[width / 2, height / 8 + (3 * height / 8) / 2],
+            pos=[width / 2, height / 4 + (1 / 4 * height / 2)],
             width=width / 2,
-            height=(3 * height / 8) / 2,
+            height=1 / 4 * height / 2,
         )
 
         dpg.configure_item(self.autoscale_scope_button, width=width / 4 - 10, height=-1)
@@ -197,7 +203,7 @@ class lcd_ui:
                 )
 
             with (
-                dpg.group(show=True) as self.output_controls_after_init_group
+                dpg.group(show=False) as self.output_controls_after_init_group
             ):  ###### CHANGE BACK TO FALSE¬!!!!!
                 self.wfg_title = dpg.add_text("Waveform Generator Settings")
                 with dpg.table(header_row=False):
@@ -244,11 +250,15 @@ class lcd_ui:
                         )
 
             with dpg.window(
+                label="Voltage List", no_collapse=True, no_close=True, no_resize=True
+            ) as self.voltage_list_window:
+                self.volt_list = variable_list(*make_variable_list_frame(1.0, 0.01, 20))
+
+            with dpg.window(
                 label="Temperature List",
                 no_collapse=True,
                 no_close=True,
                 no_resize=True,
-                no_title_bar=True,
             ) as self.temperature_list_window:
                 with dpg.group(horizontal=True):
                     self.temperature_list = variable_list(

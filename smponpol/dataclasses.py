@@ -10,6 +10,7 @@ class OutputType(Enum):
     SINGLE_VOLT_FREQ = 3
     MULTI_VOLT_FREQ = 4
 
+
 class Status(Enum):
     IDLE = 1
     SET_TEMPERATURE = 2
@@ -25,7 +26,9 @@ class range_selector_window:
     window_tag: str | int
     spacing_combo: str | int
     number_of_points_input: str | int
-    spacing_input: str | int  # number of points or spacing depending on the spacing combo value
+    spacing_input: (
+        str | int
+    )  # number of points or spacing depending on the spacing combo value
     spacing_label: str | int
     min_value_input: str | int
     max_value_input: str | int
@@ -51,13 +54,16 @@ class lcd_state:
     hotstage_connection_status: str = "Disconnected"
     agilent_connection_status: str = "Disconnected"
     oscilloscope_connection_status: str = "Disconnected"
-    scope_run_number: int = 1 
+    scope_run_number: int = 1
     hotstage_action: str = "Idle"
     hotstage_temperature: float = 25.0
     T_list: list = field(default_factory=list)
+    # freq_list: list = field(default_factory=list)
+    voltage_list: list = field(default_factory=list)
     xdata: list = field(default_factory=list)
     ydata: list = field(default_factory=list)
     T_step: int = 0
+    voltage_step: int = 0
     T_log_time: list = field(default_factory=list)
     T_log_T: list = field(default_factory=list)
 
