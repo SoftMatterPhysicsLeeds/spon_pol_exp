@@ -213,10 +213,6 @@ class lcd_ui:
                     dpg.add_table_column()
 
                     with dpg.table_row():
-                        dpg.add_text("Voltage (V):")
-                        self.voltage_input = dpg.add_input_float(
-                            default_value=0.1, step_fast=1, step=0.1, width=-1
-                        )
                         dpg.add_text("Frequency (Hz):")
                         self.frequency_input = dpg.add_input_float(
                             default_value=1000, step_fast=100, step=100, width=-1

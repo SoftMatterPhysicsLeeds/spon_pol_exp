@@ -27,20 +27,22 @@ def find_instruments_thread(frontend: lcd_ui):
 def main():
     dpg.create_context()
     ctypes.windll.shcore.SetProcessDpiAwareness(2)
+    user32 = ctypes.windll.user32
+    screensize = user32.GetSystemMetrics(0), user32.GetSystemMetrics(1)
+
     MODULE_PATH = importlib.resources.files(__package__)
     dpg.create_viewport(
         title="SMPontaneous Polarisation",
-        width=VIEWPORT_WIDTH,
-        height=DRAW_HEIGHT,
-        y_pos=50,
+        width=screensize[0],
+        height=screensize[1],
+        x_pos=0,
+        y_pos=0,
     )
 
     dpg.set_viewport_large_icon(MODULE_PATH / "assets/LCD_icon.ico")
     dpg.set_viewport_small_icon(MODULE_PATH / "assets/LCD_icon.ico")
     dpg.setup_dearpygui()
     dpg.show_viewport()
-    user32 = ctypes.windll.user32
-    screensize = user32.GetSystemMetrics(0), user32.GetSystemMetrics(1)
 
     font_path = Path(MODULE_PATH / "assets/OpenSans-Regular.ttf")
     with dpg.font_registry():
@@ -112,13 +114,13 @@ def main():
             sender, (state, enabled_theme, disabled_theme, instruments, frontend)
         )
 
-    dpg.configure_item(
-        frontend.voltage_input,
-        callback=lambda: instruments.agilent.set_voltage(
-            dpg.get_value(frontend.voltage_input)
-        ),
-        on_enter=True,
-    )
+    # dpg.configure_item(
+    #     frontend.voltage_input,
+    #     callback=lambda: instruments.agilent.set_voltage(
+    #         dpg.get_value(frontend.voltage_input)
+    #     ),
+    #     on_enter=True,
+    # )
     dpg.configure_item(
         frontend.frequency_input,
         callback=lambda: instruments.agilent.set_frequency(
