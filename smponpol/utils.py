@@ -62,7 +62,7 @@ def start_measurement(
     state.voltage_step = 0
 
     T_str = f"{state.T_step + 1}: {state.T_list[state.T_step]}"
-    v_str = f"{state.voltage_step + 1: {state.voltage_list[state.voltage_step]}}"
+    v_str = f"{state.voltage_step + 1}: {state.voltage_list[state.voltage_step]}"
 
     state.resultsDict[T_str] = dict()
     state.resultsDict[T_str][v_str] = dict()
@@ -214,7 +214,7 @@ def handle_measurement_status(
     elif state.measurement_status == Status.COLLECTING_DATA:
         dpg.set_value(
             frontend.measurement_status,
-            f"Taking data\tT: {state.hotstage_temperature:.2f}°C",
+            f"Taking data at V: {state.voltage_list[state.voltage_step]:.2f}\nT: {state.hotstage_temperature:.2f}°C",
         )
 
     elif state.measurement_status == Status.FINISHED:
@@ -328,7 +328,7 @@ def export_data_file(frontend: lcd_ui, state: lcd_state, result, single_shot=Fal
         )
     else:
         T_str = f"{state.T_step + 1}: {state.T_list[state.T_step]}"
-        v_str = f"{state.voltage_step + 1: {state.voltage_list[state.voltage_step]}}"
+        v_str = f"{state.voltage_step + 1}: {state.voltage_list[state.voltage_step]}"
         times = state.resultsDict[T_str][v_str]["time"]
         channel1 = state.resultsDict[T_str][v_str]["channel1"]
         channel2 = state.resultsDict[T_str][v_str]["channel2"]
@@ -336,7 +336,7 @@ def export_data_file(frontend: lcd_ui, state: lcd_state, result, single_shot=Fal
 
         output_filename = (
             dpg.get_value(frontend.output_file_path).split(".json")[0]
-            + f" {dpg.get_value(state.voltage_list[state.voltage_step]):.2f} Volts"
+            + f" {state.voltage_list[state.voltage_step]:.2f} Volts"
             + f" {dpg.get_value(frontend.frequency_input):.1f} Hz"
             + f" {state.T_list[state.T_step]:.2f} C.dat"
         )
@@ -381,22 +381,7 @@ def get_result(
             elif state.voltage_step == len(state.voltage_list) - 1:
                 state.T_step += 1
                 T_str = f"{state.T_step + 1}: {state.T_list[state.T_step]}"
-                v_str = f"{state.voltage_step + 1: {state.voltage_list[state.voltage_step]}}"
-                state.resultsDict[T_str][v_str] = dict()
-                state.resultsDict[T_str][v_str]["time"] = []
-                state.resultsDict[T_str][v_str]["channel1"] = []
-                state.resultsDict[T_str][v_str]["channel2"] = []
-                state.resultsDict[T_str][v_str]["channel3"] = []
-
-                state.measurement_status = Status.TEMPERATURE_STABILISED
-
-            else:
-                # state.T_step += 1
-                state.voltage_step += 1
-                T_str = f"{state.T_step + 1}: {state.T_list[state.T_step]}"
-                v_str = f"{state.voltage_step + 1: {state.voltage_list[state.voltage_step]}}"
-
-                state.resultsDict[T_str] = dict()
+                v_str = f"{state.voltage_step + 1}: {state.voltage_list[state.voltage_step]}"
                 state.resultsDict[T_str][v_str] = dict()
                 state.resultsDict[T_str][v_str]["time"] = []
                 state.resultsDict[T_str][v_str]["channel1"] = []
@@ -405,13 +390,28 @@ def get_result(
 
                 state.measurement_status = Status.SET_TEMPERATURE
 
+            else:
+                # state.T_step += 1
+                state.voltage_step += 1
+                T_str = f"{state.T_step + 1}: {state.T_list[state.T_step]}"
+                v_str = f"{state.voltage_step + 1}: {state.voltage_list[state.voltage_step]}"
+
+                state.resultsDict[T_str] = dict()
+                state.resultsDict[T_str][v_str] = dict()
+                state.resultsDict[T_str][v_str]["time"] = []
+                state.resultsDict[T_str][v_str]["channel1"] = []
+                state.resultsDict[T_str][v_str]["channel2"] = []
+                state.resultsDict[T_str][v_str]["channel3"] = []
+
+                state.measurement_status = Status.TEMPERATURE_STABILISED
+
 
 def parse_result(
     result: dict, state: lcd_state, frontend: lcd_ui, single_shot=False
 ) -> None:
     if not single_shot:
         T_str = f"{state.T_step + 1}: {state.T_list[state.T_step]}"
-        v_str = f"{state.voltage_step + 1: {state.voltage_list[state.voltage_step]}}"
+        v_str = f"{state.voltage_step + 1}: {state.voltage_list[state.voltage_step]}"
         state.resultsDict[T_str][v_str]["time"] = result["time"]
         state.resultsDict[T_str][v_str]["channel1"] = result["channel1"]
         state.resultsDict[T_str][v_str]["channel2"] = result["channel2"]
