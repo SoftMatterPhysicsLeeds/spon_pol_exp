@@ -1,6 +1,7 @@
 import dearpygui.dearpygui as dpg
 from smponpol.ui import lcd_ui
-from smponpol.dataclasses import lcd_instruments, lcd_state, Status
+from smponpol.ui_qt import MainWindow
+from smponpol.dataclasses import Instruments, State, Status
 from smponpol.instruments import Agilent33220A, Instec, Rigol4204
 import json
 import pyvisa
@@ -17,9 +18,7 @@ def write_handler(instrument, command_string):
         print(f"Could not write {command_string} to {instrument}: ", e)
 
 
-def start_measurement(
-    state: lcd_state, frontend: lcd_ui, instruments: lcd_instruments
-) -> None:
+def start_measurement(state: State, frontend: lcd_ui, instruments: Instruments) -> None:
     dpg.configure_item(frontend.start_button, enabled=False)
     with dpg.theme() as DEACTIVATED_THEME:
         with dpg.theme_component(dpg.mvAll):
@@ -76,51 +75,38 @@ def start_measurement(
     state.ydata = []
 
 
-def stop_measurement(
-    instruments: lcd_instruments, state: lcd_state, frontend: lcd_ui
-) -> None:
+def stop_measurement(instruments: Instruments, state: State, frontend: lcd_ui) -> None:
     instruments.hotstage.stop()
     state.measurement_status = Status.IDLE
 
 
-def init_agilent(
-    frontend: lcd_ui, instruments: lcd_instruments, state: lcd_state
-) -> None:
+def init_agilent(frontend: MainWindow, instruments: Instruments, state: State) -> None:
     if instruments.agilent:
         instruments.agilent.close()
     agilent = Agilent33220A(dpg.get_value(frontend.agilent_com_selector))
-    dpg.set_value(frontend.agilent_status, "Connected")
+    agilent = Agilent33220A(frontend.equipment_init.agilent_combo.currentText())
     agilent.set_output("OFF")
-    # dpg.configure_item(frontend.agilent_initialise, label = "Reconnect")
     instruments.agilent = agilent
     state.agilent_connection_status = "Connected"
 
 
 def init_oscilloscope(
-    frontend: lcd_ui, instruments: lcd_instruments, state: lcd_state
+    frontend: MainWindow, instruments: Instruments, state: State
 ) -> None:
     if instruments.oscilloscope:
         instruments.oscilloscope.close()
 
     instruments.oscilloscope = Rigol4204(
-        dpg.get_value(frontend.oscilloscope_com_selector)
+        frontend.equipment_init.oscilloscope_combo.currentText()
     )
-    dpg.set_value(frontend.oscilloscope_status, "Connected")
-    # dpg.configure_item(frontend.oscilloscope_initialise, label = "Reconnect")
 
     state.oscilloscope_connection_status = "Connected"
-    # oscilloscope.write(":AUToscale")
-    # instruments.oscilloscope.init_scope_defaults()
 
 
-def init_hotstage(
-    frontend: lcd_ui, instruments: lcd_instruments, state: lcd_state
-) -> None:
-    hotstage = Instec(dpg.get_value(frontend.hotstage_com_selector))
+def init_hotstage(frontend: MainWindow, instruments: Instruments, state: State) -> None:
+    hotstage = Instec(frontend.equipment_init.hotstage_combo.currentText())
     try:
         hotstage.get_temperature()
-        dpg.set_value(frontend.hotstage_status, "Connected")
-        # dpg.hide_item(frontend.hotstage_initialise)
         instruments.hotstage = hotstage
         state.hotstage_connection_status = "Connected"
         with open("address.dat", "w") as f:
@@ -130,10 +116,12 @@ def init_hotstage(
         dpg.set_value(frontend.hotstage_status, "Couldn't connect")
 
 
-def connect_to_instruments_callback(sender, app_data, user_data):
+def connect_to_instruments_callback(
+    main_window: MainWindow, instruments: Instruments, state: State
+):
     hotstage_thread = threading.Thread(
         target=init_hotstage,
-        args=(user_data["frontend"], user_data["instruments"], user_data["state"]),
+        args=(main_window, instruments, state),
     )
 
     hotstage_thread.daemon = True
@@ -141,7 +129,7 @@ def connect_to_instruments_callback(sender, app_data, user_data):
 
     agilent_thread = threading.Thread(
         target=init_agilent,
-        args=(user_data["frontend"], user_data["instruments"], user_data["state"]),
+        args=(main_window, instruments, state),
     )
 
     agilent_thread.daemon = True
@@ -149,19 +137,17 @@ def connect_to_instruments_callback(sender, app_data, user_data):
 
     oscilloscope_thread = threading.Thread(
         target=init_oscilloscope,
-        args=(user_data["frontend"], user_data["instruments"], user_data["state"]),
+        args=(main_window, instruments, state),
     )
 
     oscilloscope_thread.daemon = True
     oscilloscope_thread.start()
 
-    dpg.hide_item(user_data["frontend"].init_instruments_group)
-    dpg.show_item(user_data["frontend"].output_controls_after_init_group)
+    main_window.equipment_init.setVisible(False)
+    main_window.control_box.setVisible(True)
 
 
-def handle_measurement_status(
-    state: lcd_state, frontend: lcd_ui, instruments: lcd_instruments
-):
+def handle_measurement_status(state: State, frontend: lcd_ui, instruments: Instruments):
     current_wait = 0
 
     if state.measurement_status == Status.IDLE:
@@ -259,7 +245,7 @@ def find_instruments(frontend: lcd_ui):
 
 
 def take_data(
-    frontend: lcd_ui, instruments: lcd_instruments, state: lcd_state, single_shot=False
+    frontend: lcd_ui, instruments: Instruments, state: State, single_shot=False
 ) -> None:
     thread = threading.Thread(
         target=run_experiment, args=(frontend, instruments, state, single_shot)
@@ -269,7 +255,7 @@ def take_data(
 
 
 def run_experiment(
-    frontend: lcd_ui, instruments: lcd_state, state: lcd_state, single_shot=False
+    frontend: lcd_ui, instruments: State, state: State, single_shot=False
 ):
     if single_shot:
         state.measurement_status = Status.COLLECTING_DATA
@@ -293,7 +279,7 @@ def run_experiment(
     get_result(result, state, frontend, instruments, single_shot)
 
 
-def read_temperature(frontend: lcd_ui, instruments: lcd_instruments, state: lcd_state):
+def read_temperature(frontend: lcd_ui, instruments: Instruments, state: State):
     log_time = 0
     time_step = 0.05
     while True:
@@ -315,7 +301,7 @@ def read_temperature(frontend: lcd_ui, instruments: lcd_instruments, state: lcd_
         log_time += time_step
 
 
-def export_data_file(frontend: lcd_ui, state: lcd_state, result, single_shot=False):
+def export_data_file(frontend: lcd_ui, state: State, result, single_shot=False):
     if single_shot:
         times = result["time"]
         channel1 = result["channel1"]
@@ -352,9 +338,9 @@ def export_data_file(frontend: lcd_ui, state: lcd_state, result, single_shot=Fal
 
 def get_result(
     result: dict,
-    state: lcd_state,
+    state: State,
     frontend: lcd_ui,
-    instruments: lcd_instruments,
+    instruments: Instruments,
     single_shot=False,
 ) -> None:
     parse_result(result, state, frontend, single_shot)
@@ -407,7 +393,7 @@ def get_result(
 
 
 def parse_result(
-    result: dict, state: lcd_state, frontend: lcd_ui, single_shot=False
+    result: dict, state: State, frontend: lcd_ui, single_shot=False
 ) -> None:
     if not single_shot:
         T_str = f"{state.T_step + 1}: {state.T_list[state.T_step]}"

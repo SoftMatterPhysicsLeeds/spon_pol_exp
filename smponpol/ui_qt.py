@@ -15,6 +15,7 @@ from PySide6.QtWidgets import (
 
 import pyqtgraph as pg
 
+
 # need:
 # status window
 # temperature selector
@@ -40,12 +41,39 @@ class MainWindow(QMainWindow):
         self.voltage_selector = ValueListWidget("Voltage", min_value=0, max_value=20)
         self.control_box = ControlWidget()
         self.results_window = ResultsWidget()
+        self.equipment_init = EquipmentInitialisationWidget()
 
         layout.addWidget(self.status_widget, 0, 0, 1, 3)
         layout.addWidget(self.control_box, 1, 0)
+        layout.addWidget(self.equipment_init, 1, 0)
         layout.addWidget(self.voltage_selector, 1, 1)
         layout.addWidget(self.temperature_selector, 1, 2)
         layout.addWidget(self.results_window, 3, 0, 1, 3)
+
+        # Set visibility of all widgets to false until instruments are initialised.
+        self.control_box.setVisible(False)
+
+
+class EquipmentInitialisationWidget(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.layout = QGridLayout()
+        self.setLayout(self.layout)
+
+        self.layout.addWidget(QLabel("Instec: "), 0, 0)
+        self.hotstage_combo = QComboBox()
+        self.layout.addWidget(self.hotstage_combo, 0, 1)
+
+        self.layout.addWidget(QLabel("Agilent: "), 1, 0)
+        self.agilent_combo = QComboBox()
+        self.layout.addWidget(self.agilent_combo, 1, 1)
+
+        self.layout.addWidget(QLabel("Rigol: "), 2, 0)
+        self.oscilloscope_combo = QComboBox()
+        self.layout.addWidget(self.oscilloscope_combo, 2, 1)
+
+        self.initialise_button = QPushButton("Initialise")
+        self.layout.addWidget(self.initialise_button, 3, 0, 1, 2)
 
 
 class StatusWidget(QWidget):

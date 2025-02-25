@@ -45,7 +45,7 @@ class variable_list:
 
 
 @dataclass
-class lcd_state:
+class State:
     resultsDict: dict = field(default_factory=dict)
     measurement_status: Status = Status.IDLE
     t_stable_start: float = 0
@@ -69,7 +69,7 @@ class lcd_state:
 
 
 @dataclass
-class lcd_instruments:
+class Instruments:
     hotstage: Instec | None = None
     agilent: Agilent33220A | None = None
     oscilloscope: Resource | None = None
