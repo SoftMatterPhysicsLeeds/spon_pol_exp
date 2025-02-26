@@ -11,18 +11,13 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QDialogButtonBox,
     QComboBox,
+    QLineEdit,
+    QFileDialog,
 )
 
+from PySide6.QtCore import Slot
+
 import pyqtgraph as pg
-
-
-# need:
-# status window
-# temperature selector
-# voltage selector
-# instrument initialiser
-# frequency set, waveform set.
-# graph.
 
 
 class MainWindow(QMainWindow):
@@ -42,13 +37,15 @@ class MainWindow(QMainWindow):
         self.control_box = ControlWidget()
         self.results_window = ResultsWidget()
         self.equipment_init = EquipmentInitialisationWidget()
+        self.control_buttons = ControlButtonsWidget()
 
-        layout.addWidget(self.status_widget, 0, 0, 1, 3)
+        layout.addWidget(self.status_widget, 0, 0, 1, 4)
         layout.addWidget(self.control_box, 1, 0)
         layout.addWidget(self.equipment_init, 1, 0)
         layout.addWidget(self.voltage_selector, 1, 1)
         layout.addWidget(self.temperature_selector, 1, 2)
-        layout.addWidget(self.results_window, 3, 0, 1, 3)
+        layout.addWidget(self.results_window, 3, 0, 1, 4)
+        layout.addWidget(self.control_buttons, 1, 3)
 
         # Set visibility of all widgets to false until instruments are initialised.
         self.control_box.setVisible(False)
@@ -76,6 +73,28 @@ class EquipmentInitialisationWidget(QWidget):
         self.layout.addWidget(self.initialise_button, 3, 0, 1, 2)
 
 
+class ControlButtonsWidget(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.layout = QGridLayout()
+        self.setLayout(self.layout)
+
+        group_box = QGroupBox("Control")
+        group_layout = QGridLayout()
+        group_box.setLayout(group_layout)
+
+        self.autoscale_scope_button = QPushButton("Autoscale Scope")
+        group_layout.addWidget(self.autoscale_scope_button, 0, 0)
+        self.single_shot_measurement = QPushButton("Single Shot")
+        group_layout.addWidget(self.single_shot_measurement, 0, 1)
+        self.start_button = QPushButton("Start")
+        group_layout.addWidget(self.start_button, 1, 0)
+        self.stop_button = QPushButton("Stop")
+        group_layout.addWidget(self.stop_button, 1, 1)
+
+        self.layout.addWidget(group_box)
+
+
 class StatusWidget(QWidget):
     def __init__(self):
         super().__init__()
@@ -89,7 +108,14 @@ class StatusWidget(QWidget):
         self.status_label = QLabel("Idle")
         group_layout.addWidget(self.status_label)
 
+        self.temperature_label = QLabel("T: ?")
+        group_layout.addWidget(self.temperature_label)
+
         self.layout.addWidget(group_box)
+
+    @Slot(str)
+    def change_status(self, status: str):
+        self.status_label.setText(status)
 
 
 class ControlWidget(QWidget):
@@ -103,20 +129,35 @@ class ControlWidget(QWidget):
         group_layout = QGridLayout()
         group_box.setLayout(group_layout)
 
-        group_layout.addWidget(QLabel("Frequency (Hz): "), 0, 0)
+        self.file_path = QLineEdit("results.json")
+        group_layout.addWidget(self.file_path, 0, 0)
+        self.browse_button = QPushButton("Browse")
+        group_layout.addWidget(self.browse_button, 0, 1)
+
+        self.browse_button.clicked.connect(self.browse_files)
+
+        group_layout.addWidget(QLabel("Frequency (Hz): "), 1, 0)
         self.frequency_selector = QDoubleSpinBox()
         self.frequency_selector.setRange(10, 20000)
         self.frequency_selector.setDecimals(2)
         self.frequency_selector.setValue(1000)
-        group_layout.addWidget(self.frequency_selector, 0, 1)
+        group_layout.addWidget(self.frequency_selector, 1, 1)
 
-        group_layout.addWidget(QLabel("Waveform"), 1, 0)
+        group_layout.addWidget(QLabel("Waveform"), 2, 0)
         self.selected_waveform = QComboBox()
         self.selected_waveform.addItems(["Sine", "Square", "Triangle", "User"])
         self.selected_waveform.setCurrentIndex(2)
-        group_layout.addWidget(self.selected_waveform, 1, 1)
+        group_layout.addWidget(self.selected_waveform, 2, 1)
 
         self.layout.addWidget(group_box)
+
+    def browse_files(self):
+        filename, _ = QFileDialog.getSaveFileName(
+            parent=None,
+            caption="Save File",  # Default directory
+            filter="JSON files (*.json);; All Files (*);",  # File filters
+        )
+        self.file_path.setText(filename)
 
 
 class ResultsWidget(QWidget):
@@ -131,11 +172,36 @@ class ResultsWidget(QWidget):
 
         self.plot_widget = pg.PlotWidget()
         group_layout.addWidget(self.plot_widget)
+        spec_pen = pg.mkPen(color=(0, 0, 0))
 
         self.x = [1, 2, 3, 4, 5]
         self.y = [1, 2, 3, 4, 5]
 
-        self.plot_widget.plot(self.x, self.y, pen="b")
+        self.channel1 = self.plot_widget.plot(
+            self.x,
+            self.y,
+            pen=None,
+            symbol="o",
+            symbolPen=spec_pen,
+            symbolBrush=(255, 0, 0),
+        )
+        self.channel2 = self.plot_widget.plot(
+            self.x,
+            self.y,
+            pen=None,
+            symbol="o",
+            symbolPen=spec_pen,
+            symbolBrush=(0, 0, 255),
+        )
+        self.channel3 = self.plot_widget.plot(
+            self.x,
+            self.y,
+            pen=None,
+            symbol="o",
+            symbolPen=spec_pen,
+            symbolBrush=(0, 255, 0),
+        )
+
         self.plot_widget.setLabel("left", "Value", units="V")
         self.plot_widget.setLabel("bottom", "Time", units="s")
         self.plot_widget.showGrid(x=True, y=True)

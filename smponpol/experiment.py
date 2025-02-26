@@ -80,8 +80,28 @@ class ExperimentWorker(QObject):
                 stabilised = True
 
 
+class HotstageWorker(QObject):
+    current_temperature = Signal(float)
+
+    def __init__(self, instruments: Instruments):
+        super().__init__()
+
+        self.instruments = instruments
+        self.temperature_loop()
+
+    def temperature_loop(self):
+        time_step = 0.05
+        while True:
+            temperature = self.instruments.hotstage.get_temperature()
+            if temperature is None:
+                continue
+            self.current_temperature.emit(temperature)
+            time.sleep(time_step)
+
+
 class ExperimentController(QObject):
-    start_experiment = Signal(list, list)
+    start_experiment = Signal(list, list, float, str)
+    start_reading_temperature = Signal()
     update_graph = Signal(dict)
 
     def __init__(self, instruments: Instruments, state: State):
@@ -89,13 +109,28 @@ class ExperimentController(QObject):
         self.measurement_points = []
         self.current_point_index = 0
 
+        self.instruments = instruments
+
         self.worker = ExperimentWorker(instruments, state)
         self.thread = QThread()
         self.worker.moveToThread(self.thread)
 
         self.worker.measurement_finished.connect(self.parse_result)
+        self.start_experiment.connect(self.experiment_setup_and_run)
 
         self.thread.start()
+
+    def start_temperature_reading(self):
+        self.hotstage_thread = QThread()
+        self.hotstage_worker = HotstageWorker(self.instruments)
+        self.hotstage_worker.moveToThread(self.hotstage_thread)
+        self.hotstage_thread.start()
+
+    @Slot(list, list, str)
+    def experiment_setup_and_run(self, temperatures, voltages, frequency, file_path):
+        self.current_point_index = 0
+        self.create_measurement_points(temperatures, voltages, frequency, file_path)
+        self.run_next_point()
 
     def create_measurement_points(self, temperatures, voltages, frequency, file_path):
         for t, v in itertools.product(temperatures, voltages):

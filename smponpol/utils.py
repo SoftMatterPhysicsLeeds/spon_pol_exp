@@ -2,6 +2,7 @@ import dearpygui.dearpygui as dpg
 from smponpol.ui import lcd_ui
 from smponpol.ui_qt import MainWindow
 from smponpol.dataclasses import Instruments, State, Status
+from smponpol.experiment import ExperimentController
 from smponpol.instruments import Agilent33220A, Instec, Rigol4204
 import json
 import pyvisa
@@ -103,7 +104,12 @@ def init_oscilloscope(
     state.oscilloscope_connection_status = "Connected"
 
 
-def init_hotstage(frontend: MainWindow, instruments: Instruments, state: State) -> None:
+def init_hotstage(
+    frontend: MainWindow,
+    instruments: Instruments,
+    state: State,
+    experiment: ExperimentController,
+) -> None:
     hotstage = Instec(frontend.equipment_init.hotstage_combo.currentText())
     try:
         hotstage.get_temperature()
@@ -111,17 +117,21 @@ def init_hotstage(frontend: MainWindow, instruments: Instruments, state: State) 
         state.hotstage_connection_status = "Connected"
         with open("address.dat", "w") as f:
             f.write(dpg.get_value(frontend.hotstage_com_selector))
+        experiment.start_reading_temperature.emit()
 
     except pyvisa.errors.VisaIOError:
-        dpg.set_value(frontend.hotstage_status, "Couldn't connect")
+        print("Couldn't connect to hotstage")
 
 
 def connect_to_instruments_callback(
-    main_window: MainWindow, instruments: Instruments, state: State
+    main_window: MainWindow,
+    instruments: Instruments,
+    state: State,
+    experiment: ExperimentController,
 ):
     hotstage_thread = threading.Thread(
         target=init_hotstage,
-        args=(main_window, instruments, state),
+        args=(main_window, instruments, state, experiment),
     )
 
     hotstage_thread.daemon = True
