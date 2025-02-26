@@ -19,7 +19,9 @@ def main():
     experiment = ExperimentController(instruments, state)
 
     main_window.equipment_init.initialise_button.clicked.connect(
-        lambda: connect_to_instruments_callback(main_window, instruments, state)
+        lambda: connect_to_instruments_callback(
+            main_window, instruments, state, experiment
+        )
     )
 
     main_window.control_buttons.start_button.clicked.connect(
