@@ -48,7 +48,7 @@ class variable_list:
 class State:
     resultsDict: dict = field(default_factory=dict)
     measurement_status: Status = Status.IDLE
-    t_stable_start: float = 0
+    stabilisation_time: float = 30.0
     voltage_list_mode: bool = False
     spectrometer_running: bool = True
     hotstage_connection_status: str = "Disconnected"
