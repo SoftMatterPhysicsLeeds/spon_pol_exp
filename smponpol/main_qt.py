@@ -1,5 +1,4 @@
 from PySide6.QtWidgets import QApplication
-from PySide6.QtCore import QObject, Signal
 from PySide6.QtGui import QIcon
 from importlib.resources import files
 from pathlib import Path
@@ -9,10 +8,6 @@ import sys
 from smponpol.ui_qt import MainWindow
 from smponpol.utils import connect_to_instruments_callback
 from smponpol.experiment import ExperimentController
-
-
-def set_instrument_addresses(main_window: MainWindow):
-    pass
 
 
 def main():
