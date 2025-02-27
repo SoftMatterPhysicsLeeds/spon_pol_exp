@@ -29,6 +29,7 @@ def main():
             main_window.voltage_selector.get_values(),
             main_window.control_box.frequency_selector.value(),
             main_window.control_box.file_path.text(),
+            main_window.control_box.selected_waveform.currentText(),
         )
     )
 

@@ -6,6 +6,8 @@ import pyvisa
 
 from smponpol.dataclasses import Instruments, State
 
+# TODO: set waveform
+
 
 @dataclass
 class MeasurementPoint:
@@ -143,7 +145,21 @@ class ExperimentController(QObject):
         self.start_reading_temperature.connect(self.instrument_worker.temperature_loop)
 
     @Slot(list, list, str)
-    def experiment_setup_and_run(self, temperatures, voltages, frequency, file_path):
+    def experiment_setup_and_run(
+        self, temperatures, voltages, frequency, file_path, waveform_in
+    ):
+        match waveform_in:
+            case "Sine":
+                waveform = "SIN"
+            case "Square":
+                waveform = "SQU"
+            case "Triangle":
+                waveform = "TRI"
+            case "User":
+                waveform = "USER"
+        self.instruments.agilent.set_waveform(waveform)
+        self.instruments.agilent.set_output("OFF")
+
         self.current_point_index = 0
         self.create_measurement_points(temperatures, voltages, frequency, file_path)
         self.run_next_point()
