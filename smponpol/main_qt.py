@@ -1,5 +1,6 @@
 from PySide6.QtWidgets import QApplication
 from PySide6.QtGui import QIcon
+from PySide6.QtCore import Qt
 from importlib.resources import files
 from pathlib import Path
 from smponpol.dataclasses import State, Instruments
@@ -51,11 +52,16 @@ def main():
         main_window.equipment_init.add_instrument_addresses
     )
 
+    experiment.instrument_worker.current_temperature.connect(main_window.status_widget.change_temperature)
+    experiment.instrument_worker.current_temperature.connect(state.set_hotstage_temperature)
+
     MODULE_PATH = files(__package__)
 
     icon = QIcon(str(Path(MODULE_PATH / "assets/LCD_icon.ico")))
     main_window.setWindowIcon(icon)
     main_window.showMaximized()
+
+    experiment.instrument_worker.find_instruments()
 
     sys.exit(app.exec())
 

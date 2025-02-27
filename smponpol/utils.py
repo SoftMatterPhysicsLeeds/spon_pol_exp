@@ -84,7 +84,7 @@ def stop_measurement(instruments: Instruments, state: State, frontend: lcd_ui) -
 def init_agilent(frontend: MainWindow, instruments: Instruments, state: State) -> None:
     if instruments.agilent:
         instruments.agilent.close()
-    agilent = Agilent33220A(dpg.get_value(frontend.agilent_com_selector))
+    
     agilent = Agilent33220A(frontend.equipment_init.agilent_combo.currentText())
     agilent.set_output("OFF")
     instruments.agilent = agilent
@@ -116,7 +116,7 @@ def init_hotstage(
         instruments.hotstage = hotstage
         state.hotstage_connection_status = "Connected"
         with open("address.dat", "w") as f:
-            f.write(dpg.get_value(frontend.hotstage_com_selector))
+            f.write(frontend.equipment_init.hotstage_combo.currentText())
         experiment.start_reading_temperature.emit()
 
     except pyvisa.errors.VisaIOError:

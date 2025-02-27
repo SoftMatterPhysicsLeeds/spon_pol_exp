@@ -1,4 +1,4 @@
-from PySide6.QtCore import QObject, Signal, Slot, QThread
+from PySide6.QtCore import QObject, Signal, Slot, QThread, QTimer
 from dataclasses import dataclass, field
 import itertools
 import time
@@ -6,7 +6,7 @@ import pyvisa
 
 from smponpol.dataclasses import Instruments, State
 
-# TODO: set waveform
+# TODO: need to add ramp setting for T
 
 
 @dataclass
@@ -26,19 +26,65 @@ class ExperimentWorker(QObject):
         super().__init__()
         self.instruments = instruments
         self.state = state
-
+    # Setup timer for temperature monitoring
+        self.temp_timer = QTimer()
+        self.temp_timer.timeout.connect(self.check_temperature)
+        
+        # Flag to track what we're doing
+        self.waiting_for_temp = False
+        self.current_point = None
+        self.t_stable_start = 0
+        
     def run_single_point(self, point: MeasurementPoint):
+        self.current_point = point
         self.set_temperature(point)
-        self.take_data(point)
+        # take_data will be called when temperature is stable
+        
+    def set_temperature(self, point: MeasurementPoint):
+        self.instruments.hotstage.ramp(point.temperature, 2)
+        self.status_changed.emit(f"Going to {point.temperature}°C\tT")
+        
+        # Start monitoring temperature
+        self.waiting_for_temp = True
+        self.at_temperature = False
+        self.stabilised = False
+        self.temp_timer.start(100)  # Check every 100ms
+        
+    def check_temperature(self):
+        point = self.current_point
+        
+        if not self.at_temperature:
+            # Check if we've reached target temperature
+            if (
+                self.state.hotstage_temperature > point.temperature - 0.1
+                and self.state.hotstage_temperature < point.temperature + 0.1
+            ):
+                self.t_stable_start = time.time()
+                self.at_temperature = True
+        else:
+            # We're at temperature, check stabilization
+            current_wait = time.time() - self.t_stable_start
+            self.status_changed.emit(
+                f"Stabilising temperature for {current_wait:.2f}/{self.state.stabilisation_time}s\tT: {self.state.hotstage_temperature:.2f}°C"
+            )
+            
+            if current_wait >= self.state.stabilisation_time:
+                self.stabilised = True
+                self.waiting_for_temp = False
+                self.temp_timer.stop()
+                
+                # Now proceed to take data
+                self.take_data(self.current_point)
+    
 
     def take_data(self, point: MeasurementPoint):
         self.status_changed.emit(
             f"Taking data: V: {point.voltage}V, T: {point.temperature}°C"
         )
         result = dict()
-        self.instruments.agile
+        
         self.instruments.agilent.set_voltage(
-            self.state.voltage_list[self.state.voltage_step]
+            point.voltage
         )
         self.instruments.agilent.set_output("ON")
 
@@ -57,30 +103,6 @@ class ExperimentWorker(QObject):
         point.result = result
         self.measurement_finished.emit(result)
 
-    def set_temperature(self, point: MeasurementPoint):
-        self.instruments.hotstage.ramp(point.temperature)
-        at_temperature = False
-        stabilised = False
-        t_stable_start = 0
-
-        while not at_temperature:
-            self.status_changed.emit(
-                f"Going to {point.temperature}°C\tT: {self.state.hotstage_temperature:.2f}°C"
-            )
-            if (
-                self.state.hotstage_temperature > point.temperature - 0.1
-                and self.state.hotstage_temperature < point.temperature + 0.1
-            ):
-                t_stable_start = time.time()
-                at_temperature = True
-
-        while not stabilised:
-            current_wait = time.time() - t_stable_start
-            self.status_changed.emit(
-                f"Stabilising temperature for {current_wait:.2f}/{self.state.stabilisation_time}s\tT: {self.state.hotstage_temperature:.2f}°C"
-            )
-            if current_wait >= self.state.stabilisation_time:
-                stabilised = True
 
 
 class InstrumentWorker(QObject):
@@ -93,12 +115,15 @@ class InstrumentWorker(QObject):
 
         self.instruments = instruments
         # self.temperature_loop()
+        # self.find_instruments()
 
     def find_instruments(self):
         rm = pyvisa.ResourceManager()
         visa_resources = rm.list_resources("?*")
 
+
         usb_selector = [x for x in visa_resources if x.split("::")[0] == "USB0"]
+        
 
         instec_addresses = [x for x in usb_selector if x.split("::")[1] == "0x03EB"]
         agilent_addresses = [x for x in usb_selector if x.split("::")[1] == "0x0957"]
@@ -119,7 +144,7 @@ class InstrumentWorker(QObject):
 
 
 class ExperimentController(QObject):
-    start_experiment = Signal(list, list, float, str)
+    start_experiment = Signal(list, list, float, str, str)
     start_reading_temperature = Signal()
     update_graph = Signal(dict)
 

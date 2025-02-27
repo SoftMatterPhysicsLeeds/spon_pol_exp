@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from smponpol.instruments import Instec, Agilent33220A
 from enum import Enum
 from pyvisa.resources import Resource
+from PySide6.QtCore import Slot
 
 
 class OutputType(Enum):
@@ -66,6 +67,11 @@ class State:
     voltage_step: int = 0
     T_log_time: list = field(default_factory=list)
     T_log_T: list = field(default_factory=list)
+
+    Slot(float)
+    def set_hotstage_temperature(self, T: float):
+        self.hotstage_temperature = T
+
 
 
 @dataclass
