@@ -101,7 +101,7 @@ class ExperimentWorker(QObject):
         result["channel3"] = data3
 
         point.result = result
-        self.measurement_finished.emit(result)
+        self.measurement_finished.emit(point)
 
 
 

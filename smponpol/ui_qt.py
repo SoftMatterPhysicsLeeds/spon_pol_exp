@@ -122,7 +122,6 @@ class StatusWidget(QWidget):
 
     @Slot(str)
     def change_status(self, status: str):
-        print(status)
         self.status_label.setText(status)
 
     @Slot(float)
