@@ -43,6 +43,8 @@ def main():
         )
     )
 
+    experiment.update_graph.connect(main_window.results_window.update)
+
     experiment.worker.status_changed.connect(main_window.status_widget.change_status)
     experiment.instrument_worker.instruments_found.connect(
         main_window.equipment_init.add_instrument_addresses

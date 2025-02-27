@@ -215,6 +215,12 @@ class ResultsWidget(QWidget):
 
         self.layout.addWidget(group_box)
 
+    @Slot(dict)
+    def update(self, result: dict):
+        self.channel1.setData(result["time"], result["channel1"])
+        self.channel2.setData(result["time"], result["channel2"])
+        self.channel3.setData(result["time"], result["channel3"])
+
 
 class ValueListWidget(QWidget):
     def __init__(self, variable_name="Frequency", min_value=20, max_value=2e6):
