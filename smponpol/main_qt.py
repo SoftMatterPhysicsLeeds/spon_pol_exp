@@ -11,6 +11,10 @@ from smponpol.utils import connect_to_instruments_callback
 from smponpol.experiment import ExperimentController
 
 
+def set_instrument_addresses(main_window: MainWindow):
+    pass
+
+
 def main():
     app = QApplication()
     main_window = MainWindow()
@@ -45,6 +49,9 @@ def main():
     )
 
     experiment.worker.status_changed.connect(main_window.status_widget.change_status)
+    experiment.instrument_worker.instruments_found.connect(
+        main_window.equipment_init.add_instrument_addresses
+    )
 
     MODULE_PATH = files(__package__)
 

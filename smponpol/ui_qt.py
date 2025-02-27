@@ -72,6 +72,13 @@ class EquipmentInitialisationWidget(QWidget):
         self.initialise_button = QPushButton("Initialise")
         self.layout.addWidget(self.initialise_button, 3, 0, 1, 2)
 
+    def add_instrument_addresses(
+        self, instec_addresses, agilent_addresses, rigol_addresses
+    ):
+        self.hotstage_combo.addItems(instec_addresses)
+        self.agilent_combo.addItems(agilent_addresses)
+        self.oscilloscope_combo.addItems(rigol_addresses)
+
 
 class ControlButtonsWidget(QWidget):
     def __init__(self):

@@ -2,6 +2,7 @@ from PySide6.QtCore import QObject, Signal, Slot, QThread
 from dataclasses import dataclass, field
 import itertools
 import time
+import pyvisa
 
 from smponpol.dataclasses import Instruments, State
 
@@ -80,14 +81,30 @@ class ExperimentWorker(QObject):
                 stabilised = True
 
 
-class HotstageWorker(QObject):
+class InstrumentWorker(QObject):
     current_temperature = Signal(float)
+
+    instruments_found = Signal(list, list, list)
 
     def __init__(self, instruments: Instruments):
         super().__init__()
 
         self.instruments = instruments
-        self.temperature_loop()
+        # self.temperature_loop()
+
+    def find_instruments(self):
+        rm = pyvisa.ResourceManager()
+        visa_resources = rm.list_resources("?*")
+
+        usb_selector = [x for x in visa_resources if x.split("::")[0] == "USB0"]
+
+        instec_addresses = [x for x in usb_selector if x.split("::")[1] == "0x03EB"]
+        agilent_addresses = [x for x in usb_selector if x.split("::")[1] == "0x0957"]
+        rigol_addresses = [x for x in usb_selector if x.split("::")[1] == "0x1AB1"]
+
+        self.instruments_found.emit(
+            instec_addresses, agilent_addresses, rigol_addresses
+        )
 
     def temperature_loop(self):
         time_step = 0.05
@@ -114,17 +131,16 @@ class ExperimentController(QObject):
         self.worker = ExperimentWorker(instruments, state)
         self.thread = QThread()
         self.worker.moveToThread(self.thread)
+        self.thread.start()
+
+        self.instrument_thread = QThread()
+        self.instrument_worker = InstrumentWorker(self.instruments)
+        self.instrument_worker.moveToThread(self.instrument_thread)
+        self.instrument_thread.start()
 
         self.worker.measurement_finished.connect(self.parse_result)
         self.start_experiment.connect(self.experiment_setup_and_run)
-
-        self.thread.start()
-
-    def start_temperature_reading(self):
-        self.hotstage_thread = QThread()
-        self.hotstage_worker = HotstageWorker(self.instruments)
-        self.hotstage_worker.moveToThread(self.hotstage_thread)
-        self.hotstage_thread.start()
+        self.start_reading_temperature.connect(self.instrument_worker.temperature_loop)
 
     @Slot(list, list, str)
     def experiment_setup_and_run(self, temperatures, voltages, frequency, file_path):
