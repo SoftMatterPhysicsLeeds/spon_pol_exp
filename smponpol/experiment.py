@@ -3,10 +3,24 @@ from dataclasses import dataclass, field
 import itertools
 import time
 import pyvisa
+import threading
 
-from smponpol.dataclasses import Instruments, State
+from smponpol.instruments import Instec, Agilent33220A, Rigol4204
 
 # TODO: need to add ramp setting for T
+
+
+@dataclass
+class Instruments:
+    hotstage: Instec | None = None
+    agilent: Agilent33220A | None = None
+    oscilloscope: Rigol4204 | None = None
+    hotstage_temperature: float = 25.0
+
+    Slot(float)
+
+    def set_hotstage_temperature(self, T: float):
+        self.hotstage_temperature = T
 
 
 @dataclass
@@ -22,42 +36,52 @@ class ExperimentWorker(QObject):
     status_changed = Signal(str)
     measurement_finished = Signal(MeasurementPoint)
 
-    def __init__(self, instruments: Instruments, state: State):
+    def __init__(self, instruments: Instruments):
         super().__init__()
         self.instruments = instruments
-        self.state = state
-    # Setup timer for temperature monitoring
+
+        self.should_stop = True
+        # Setup timer for temperature monitoring
         self.temp_timer = QTimer()
         self.temp_timer.timeout.connect(self.check_temperature)
-        
+
         # Flag to track what we're doing
         self.waiting_for_temp = False
         self.current_point = None
         self.t_stable_start = 0
-        
+
     def run_single_point(self, point: MeasurementPoint):
+        self.should_stop = False
         self.current_point = point
         self.set_temperature(point)
         # take_data will be called when temperature is stable
-        
+
     def set_temperature(self, point: MeasurementPoint):
+        if self.should_stop:
+            self.status_changed.emit("Idle")
+            return
         self.instruments.hotstage.ramp(point.temperature, 2)
-        self.status_changed.emit(f"Going to {point.temperature}°C\tT")
-        
+        self.status_changed.emit(f"Going to {point.temperature}°C")
+
         # Start monitoring temperature
         self.waiting_for_temp = True
         self.at_temperature = False
         self.stabilised = False
         self.temp_timer.start(100)  # Check every 100ms
-        
+
     def check_temperature(self):
+        if self.should_stop:
+            self.temp_timer.stop()
+            self.status_changed.emit("Idle")
+            return
+
         point = self.current_point
-        
+
         if not self.at_temperature:
             # Check if we've reached target temperature
             if (
-                self.state.hotstage_temperature > point.temperature - 0.1
-                and self.state.hotstage_temperature < point.temperature + 0.1
+                self.instruments.hotstage_temperature > point.temperature - 0.1
+                and self.instruments.hotstage_temperature < point.temperature + 0.1
             ):
                 self.t_stable_start = time.time()
                 self.at_temperature = True
@@ -65,27 +89,27 @@ class ExperimentWorker(QObject):
             # We're at temperature, check stabilization
             current_wait = time.time() - self.t_stable_start
             self.status_changed.emit(
-                f"Stabilising temperature for {current_wait:.2f}/{self.state.stabilisation_time}s\tT: {self.state.hotstage_temperature:.2f}°C"
+                f"Stabilising temperature for {current_wait:.2f}/{30}s\tT: {self.instruments.hotstage_temperature:.2f}°C"
             )
-            
-            if current_wait >= self.state.stabilisation_time:
+
+            if current_wait >= 30:
                 self.stabilised = True
                 self.waiting_for_temp = False
                 self.temp_timer.stop()
-                
+
                 # Now proceed to take data
                 self.take_data(self.current_point)
-    
 
     def take_data(self, point: MeasurementPoint):
+        if self.should_stop:
+            self.status_changed.emit("Idle")
+            return
         self.status_changed.emit(
             f"Taking data: V: {point.voltage}V, T: {point.temperature}°C"
         )
         result = dict()
-        
-        self.instruments.agilent.set_voltage(
-            point.voltage
-        )
+
+        self.instruments.agilent.set_voltage(point.voltage)
         self.instruments.agilent.set_output("ON")
 
         times, data = self.instruments.oscilloscope.get_channel_trace(1)
@@ -104,7 +128,6 @@ class ExperimentWorker(QObject):
         self.measurement_finished.emit(point)
 
 
-
 class InstrumentWorker(QObject):
     current_temperature = Signal(float)
 
@@ -114,16 +137,12 @@ class InstrumentWorker(QObject):
         super().__init__()
 
         self.instruments = instruments
-        # self.temperature_loop()
-        # self.find_instruments()
 
     def find_instruments(self):
         rm = pyvisa.ResourceManager()
         visa_resources = rm.list_resources("?*")
 
-
         usb_selector = [x for x in visa_resources if x.split("::")[0] == "USB0"]
-        
 
         instec_addresses = [x for x in usb_selector if x.split("::")[1] == "0x03EB"]
         agilent_addresses = [x for x in usb_selector if x.split("::")[1] == "0x0957"]
@@ -148,14 +167,13 @@ class ExperimentController(QObject):
     start_reading_temperature = Signal()
     update_graph = Signal(dict)
 
-    def __init__(self, instruments: Instruments, state: State):
+    def __init__(self, instruments: Instruments):
         super().__init__()
         self.measurement_points = []
         self.current_point_index = 0
-
         self.instruments = instruments
 
-        self.worker = ExperimentWorker(instruments, state)
+        self.worker = ExperimentWorker(instruments)
         self.thread = QThread()
         self.worker.moveToThread(self.thread)
         self.thread.start()
@@ -226,4 +244,16 @@ class ExperimentController(QObject):
 
     def stop_experiment(self):
         self.instruments.hotstage.stop()
+        self.worker.stop = True
         self.worker.status_changed.emit("Idle")
+
+    def stop_and_cleanup(self):
+        self.stop_experiment()
+
+        self.thread.quit()
+        self.thread.wait(1000)
+
+        self.instrument_thread.quit()
+        self.instrument_thread.wait(1000)
+
+
