@@ -6,6 +6,7 @@ from smponpol.experiment import Instruments
 from smponpol.instruments import Agilent33220A, Rigol4204, Instec
 import sys
 import threading
+import pyvisa
 
 from smponpol.ui_qt import MainWindow
 from smponpol.experiment import ExperimentController

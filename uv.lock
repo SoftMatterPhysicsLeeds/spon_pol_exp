@@ -119,6 +119,19 @@ wheels = [
 ]
 
 [[package]]
+name = "pyvisa-py"
+version = "0.7.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pyvisa" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/82/14/fffb2de1baaa3dd6e30940a9882d742365baffa3ba4dade0260ddaee6390/PyVISA-py-0.7.2.tar.gz", hash = "sha256:4c5f5b867858457dbebfff92a42fba2d8b046d28defbbec2a09e3c1f0850e851", size = 95701 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/70/7b/9c9cbb09596d00a3a5b009559e9b859ac459d01611fea6b3b655f74dc323/PyVISA_py-0.7.2-py3-none-any.whl", hash = "sha256:c53b941a5ee6547aadc5321f930c924dd5c4434891bc512fcafcdd5a4a8d110d", size = 75570 },
+]
+
+[[package]]
 name = "shiboken6"
 version = "6.8.2.1"
 source = { registry = "https://pypi.org/simple" }
@@ -139,6 +152,7 @@ dependencies = [
     { name = "pyqtgraph" },
     { name = "pyside6" },
     { name = "pyvisa" },
+    { name = "pyvisa-py" },
     { name = "xlsxwriter" },
 ]
 
@@ -149,6 +163,7 @@ requires-dist = [
     { name = "pyqtgraph", specifier = ">=0.13.7" },
     { name = "pyside6", specifier = ">=6.8.2.1" },
     { name = "pyvisa", specifier = ">=1.14.1" },
+    { name = "pyvisa-py", specifier = ">=0.7.2" },
     { name = "xlsxwriter", specifier = ">=3.2.0" },
 ]
 
