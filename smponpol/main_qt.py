@@ -100,6 +100,7 @@ def main():
             main_window.control_box.frequency_selector.value(),
             main_window.control_box.file_path.text(),
             main_window.control_box.selected_waveform.currentText(),
+            main_window.control_box.temperature_rate_selector.value(),
         )
     )
 

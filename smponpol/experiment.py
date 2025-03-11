@@ -29,6 +29,7 @@ class MeasurementPoint:
     voltage: float
     frequency: float
     file_path: str
+    rate: float
     result: dict = field(default_factory=dict)
 
 
@@ -60,7 +61,7 @@ class ExperimentWorker(QObject):
         if self.should_stop:
             self.status_changed.emit("Idle")
             return
-        self.instruments.hotstage.ramp(point.temperature, 2)
+        self.instruments.hotstage.ramp(point.temperature, point.rate)
         self.status_changed.emit(f"Going to {point.temperature}°C")
 
         # Start monitoring temperature
@@ -163,7 +164,7 @@ class InstrumentWorker(QObject):
 
 
 class ExperimentController(QObject):
-    start_experiment = Signal(list, list, float, str, str)
+    start_experiment = Signal(list, list, float, str, str, float)
     start_reading_temperature = Signal()
     update_graph = Signal(dict)
 
@@ -189,7 +190,7 @@ class ExperimentController(QObject):
 
     @Slot(list, list, str)
     def experiment_setup_and_run(
-        self, temperatures, voltages, frequency, file_path, waveform_in
+        self, temperatures, voltages, frequency, file_path, waveform_in, rate
     ):
         match waveform_in:
             case "Sine":
@@ -204,12 +205,18 @@ class ExperimentController(QObject):
         self.instruments.agilent.set_output("OFF")
 
         self.current_point_index = 0
-        self.create_measurement_points(temperatures, voltages, frequency, file_path)
+        self.create_measurement_points(
+            temperatures, voltages, frequency, file_path, rate
+        )
         self.run_next_point()
 
-    def create_measurement_points(self, temperatures, voltages, frequency, file_path):
+    def create_measurement_points(
+        self, temperatures, voltages, frequency, file_path, rate
+    ):
         for t, v in itertools.product(temperatures, voltages):
-            self.measurement_points.append(MeasurementPoint(t, v, frequency, file_path))
+            self.measurement_points.append(
+                MeasurementPoint(t, v, frequency, file_path, rate)
+            )
 
     def run_next_point(self):
         if self.current_point_index >= len(self.measurement_points):
@@ -255,5 +262,3 @@ class ExperimentController(QObject):
 
         self.instrument_thread.quit()
         self.instrument_thread.wait(1000)
-
-

@@ -172,6 +172,13 @@ class ControlWidget(QWidget):
         self.selected_waveform.setCurrentIndex(2)
         group_layout.addWidget(self.selected_waveform, 2, 1)
 
+        group_layout.addWidget(QLabel("Rate (°C/min): "))
+        self.temperature_rate_selector = QDoubleSpinBox()
+        self.temperature_rate_selector.setRange(0.1, 20)
+        self.temperature_rate_selector.setDecimals(2)
+        self.temperature_rate_selector.setValue(2)
+        group_layout.addWidget(self.temperature_rate_selector, 3, 1)
+
         self.layout.addWidget(group_box)
 
     def browse_files(self):
