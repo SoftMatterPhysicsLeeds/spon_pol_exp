@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (
     QComboBox,
     QLineEdit,
     QFileDialog,
+    QHBoxLayout,
 )
 
 from PySide6.QtCore import Slot
@@ -105,7 +106,7 @@ class ControlButtonsWidget(QWidget):
 class StatusWidget(QWidget):
     def __init__(self):
         super().__init__()
-        self.layout = QVBoxLayout()
+        self.layout = QHBoxLayout()
         self.setLayout(self.layout)
 
         group_box = QGroupBox("Status")
@@ -113,12 +114,23 @@ class StatusWidget(QWidget):
         group_box.setLayout(group_layout)
 
         self.status_label = QLabel("Idle")
+        self.status_label.setStyleSheet(""" QLabel {
+            font-size: 28pt;
+        }""")
         group_layout.addWidget(self.status_label)
 
-        self.temperature_label = QLabel("T: ?")
-        group_layout.addWidget(self.temperature_label)
+        temp_group_box = QGroupBox("Temperature")
+        temp_group_layout = QVBoxLayout()
+        temp_group_box.setLayout(temp_group_layout)
+
+        self.temperature_label = QLabel("?")
+        self.temperature_label.setStyleSheet(""" QLabel {
+            font-size: 28pt;
+        }""")
+        temp_group_layout.addWidget(self.temperature_label)
 
         self.layout.addWidget(group_box)
+        self.layout.addWidget(temp_group_box)
 
     @Slot(str)
     def change_status(self, status: str):
