@@ -172,12 +172,20 @@ class ControlWidget(QWidget):
         self.selected_waveform.setCurrentIndex(2)
         group_layout.addWidget(self.selected_waveform, 2, 1)
 
-        group_layout.addWidget(QLabel("Rate (°C/min): "))
+        group_layout.addWidget(QLabel("Rate (°C/min): "), 3, 0)
         self.temperature_rate_selector = QDoubleSpinBox()
         self.temperature_rate_selector.setRange(0.1, 20)
         self.temperature_rate_selector.setDecimals(2)
         self.temperature_rate_selector.setValue(2)
         group_layout.addWidget(self.temperature_rate_selector, 3, 1)
+
+        self.go_to_temp_button = QPushButton("Go to (°C): ")
+        group_layout.addWidget(self.go_to_temp_button, 4, 0)
+        self.go_to_temp_selector = QDoubleSpinBox()
+        self.go_to_temp_selector.setRange(-150, 300)
+        self.go_to_temp_selector.setDecimals(2)
+        self.go_to_temp_selector.setValue(100)
+        group_layout.addWidget(self.go_to_temp_selector, 4, 1)
 
         self.layout.addWidget(group_box)
 

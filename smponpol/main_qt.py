@@ -115,6 +115,13 @@ def main():
         )
     )
 
+    main_window.control_box.go_to_temp_button.clicked.connect(
+        lambda: instruments.hotstage.ramp(
+            main_window.control_box.go_to_temp_selector.value(),
+            main_window.control_box.temperature_rate_selector.value(),
+        )
+    )
+
     experiment.update_graph.connect(main_window.results_window.update)
 
     experiment.worker.status_changed.connect(main_window.status_widget.change_status)
