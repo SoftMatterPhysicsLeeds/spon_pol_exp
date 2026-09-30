@@ -103,7 +103,7 @@ def main():
                     waveform = "TRI"
                 case "User":
                     waveform = "USER"
-            instruments.set_waveform(waveform)
+            instruments.agilent.set_waveform(waveform)
             instruments.agilent.set_output("ON")
             dpg.configure_item(sender, label="Turn output off")
 
